@@ -1,0 +1,62 @@
+project_name: rbac-wizard
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+      - '^Merge pull request'
+  groups:
+    - title: "Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "Documentation Updates"
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "Other Changes"
+      regexp: "^(ci|build|misc|perf|deps):"
+      order: 3
+    - title: "Miscellaneous"
+      regexp: ".*"
+      order: 4
+
+before:
+  hooks:
+    - go fmt ./...
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: rbac-wizard
+    main: .
+    binary: rbac-wizard
+    env:
+      - CGO_ENABLED=0
+    ldflags: -s -w -X github.com/pehlicd/rbac-wizard/cmd.versionString={{ .Tag }} -X github.com/pehlicd/rbac-wizard/cmd.buildDate={{ .Date }} -X github.com/pehlicd/rbac-wizard/cmd.buildCommit={{ .Commit }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - builds:
+      - rbac-wizard
+    name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    wrap_in_directory: false
+    format: tar.gz
+    files:
+      - LICENSE
+
+release:
+  github:
+    name: rbac-wizard
+    owner: pehlicd
+  draft: false
