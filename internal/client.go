@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 )
 
-// getClientset Creates a new clientset for the kubernetes
-func getClientset() (*kubernetes.Clientset, error) {
+// GetClientset Creates a new clientset for the kubernetes
+func GetClientset() (*kubernetes.Clientset, error) {
 	var config *rest.Config
 
 	// First try to use the in-cluster configuration
