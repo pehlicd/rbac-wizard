@@ -44,6 +44,8 @@ var serveCmd = &cobra.Command{
 	},
 }
 
+var app internal.App
+
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
@@ -51,6 +53,13 @@ func init() {
 }
 
 func serve(port string) {
+	kubeClient, err := internal.GetClientset()
+	if err != nil {
+		log.Fatalf("Failed to create Kubernetes client: %v\n", err)
+	}
+
+	app.KubeClient = kubeClient
+
 	// Set up CORS
 	c := cors.New(cors.Options{
 		AllowOriginRequestFunc: func(r *http.Request, origin string) bool {
@@ -103,7 +112,7 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", "0")
 
 	// Get the bindings
-	bindings, err := internal.GetBindings()
+	bindings, err := internal.Generator(app).GetBindings()
 	if err != nil {
 		http.Error(w, "Failed to get bindings", http.StatusInternalServerError)
 		return

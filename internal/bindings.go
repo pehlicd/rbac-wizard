@@ -3,30 +3,11 @@ package internal
 import (
 	"context"
 	"fmt"
-	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Bindings struct {
-	ClusterRoleBindings *v1.ClusterRoleBindingList `json:"clusterRoleBindings"`
-	RoleBindings        *v1.RoleBindingList        `json:"roleBindings"`
-}
-
-type Data struct {
-	Name     string       `json:"name"`
-	Id       int          `json:"id"`
-	Kind     string       `json:"kind"`
-	Subjects []v1.Subject `json:"subjects"`
-	RoleRef  v1.RoleRef   `json:"roleRef"`
-	Raw      string       `json:"raw"`
-}
-
-func GetBindings() (*Bindings, error) {
-	clientset, err := getClientset()
-	if err != nil {
-		fmt.Println("Error creating Kubernetes client:", err)
-		return nil, err
-	}
+func (app App) GetBindings() (*Bindings, error) {
+	clientset := app.KubeClient
 
 	crbs, err := clientset.RbacV1().ClusterRoleBindings().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
