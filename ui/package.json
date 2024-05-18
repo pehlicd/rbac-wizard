@@ -26,6 +26,7 @@
 		"@types/react": "18.2.21",
 		"@types/react-dom": "18.2.7",
 		"autoprefixer": "10.4.19",
+		"axios": "^1.6.8",
 		"clsx": "^2.0.0",
 		"d3": "^7.9.0",
 		"eslint": "8.48.0",

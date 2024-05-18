@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import axios from "axios";
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;
@@ -42,15 +43,11 @@ const DisjointGraph = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/data');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data: BindingData[] = await response.json();
+                const response = await axios.get('/api/data');
+                const data: BindingData[] = response.data;
                 if (!data) {
-                    throw new Error('Data is null or undefined');
+                    console.error(new Error('Data is null or undefined'));
                 }
-                console.log('Fetched data:', data);
                 renderGraph(data);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -161,7 +158,7 @@ const DisjointGraph = () => {
             };
         };
 
-        fetchData();
+        fetchData().finally(() => { console.log('Data fetching completed'); });
     }, [isDarkMode]);
 
     useEffect(() => {

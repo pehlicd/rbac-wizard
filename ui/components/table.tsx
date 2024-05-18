@@ -23,6 +23,7 @@ import {SearchIcon, VerticalDotsIcon, ChevronDownIcon, RefreshIcon} from "@/comp
 import {Modal, ModalBody, ModalContent, ModalHeader} from "@nextui-org/modal";
 import {Card, CardBody, CardHeader} from "@nextui-org/card";
 import { stringify } from 'yaml';
+import axios from "axios";
 
 function capitalize(str: string) {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -84,9 +85,8 @@ export default function MainTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/data')
-            .then(response => response.json())
-            .then(data => setData(data))
+        axios.get('/api/data')
+            .then(response => setData(response.data))
             .catch(error => console.error('Error fetching data:', error));
     }, []);
 
@@ -165,7 +165,7 @@ export default function MainTable() {
                 );
             case "details":
                 return (
-                    <div className="relative flex justify-end items-center gap-2">
+                    <div className="relative flex justify-center items-center gap-2">
                         <Dropdown>
                             <DropdownTrigger>
                                 <Button isIconOnly size="sm" variant="light">
@@ -275,7 +275,7 @@ export default function MainTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-                        <Button color="primary" endContent={<RefreshIcon />} onClick={() => fetch('http://localhost:8080/api/data').then(response => response.json()).then(data => setData(data)).catch(error => console.error('Error fetching data:', error))}>
+                        <Button color="primary" endContent={<RefreshIcon />} onClick={() => axios.get('/api/data').then(response => setData(response.data)).catch(error => console.error('Error fetching data:', error))}>
                             Refresh
                         </Button>
                     </div>
