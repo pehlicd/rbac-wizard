@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import axios from "axios";
+import { useTheme } from 'next-themes';
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;
@@ -38,7 +39,8 @@ type BindingData = {
 const DisjointGraph = () => {
     const svgRef = useRef<SVGSVGElement | null>(null);
     const [hoveredNode, setHoveredNode] = useState<Node | null>(null);
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark';
 
     useEffect(() => {
         const fetchData = async () => {
@@ -121,7 +123,7 @@ const DisjointGraph = () => {
                 .enter().append('circle')
                 .attr('class', 'node')
                 .attr('r', 10)
-                .attr('fill', d => d.kind === 'ClusterRoleBinding' ? 'orange' : 'green')
+                .attr('fill', d => d.kind === 'ClusterRoleBinding' ? 'orange' : d.kind === 'RoleBinding' ? 'green' : 'pink')
                 .call(drag(simulation) as any)
                 .on('mouseover', (_event, d) => setHoveredNode(d))
                 .on('mouseout', () => setHoveredNode(null));
@@ -134,7 +136,7 @@ const DisjointGraph = () => {
                 .attr('y', d => d.y!)
                 .text(d => d.label)
                 .style('font-size', '12px')
-                .style('fill', '#4E46C1')
+                .style('fill', isDarkMode ? '#FFF' : '#000')
                 .style('text-anchor', '-moz-initial');
 
             simulation.on('tick', () => {
@@ -153,34 +155,51 @@ const DisjointGraph = () => {
                     .attr('y', d => d.y!);
             });
 
+            // Legend
+            const legend = svg.append('g')
+                .attr('class', 'legend')
+                .attr('transform', 'translate(20,20)');
+
+            const legendData = [
+                { label: 'ClusterRoleBinding', color: 'orange' },
+                { label: 'RoleBinding', color: 'green' },
+                { label: 'Other', color: 'pink' }
+            ];
+
+            const legendItem = legend.selectAll('.legend-item')
+                .data(legendData)
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (_d, i) => `translate(0, ${i * 20})`);
+
+            legendItem.append('rect')
+                .attr('width', 18)
+                .attr('height', 18)
+                .attr('fill', d => d.color);
+
+            legendItem.append('text')
+                .attr('x', 24)
+                .attr('y', 9)
+                .attr('dy', '0.35em')
+                .text(d => d.label)
+                .style('font-size', '12px')
+                .style('fill', isDarkMode ? '#FFF' : '#333'); // Dark text color for light mode
+
             return () => {
                 simulation.stop();
             };
         };
 
         fetchData().finally(() => { console.log('Data fetching completed'); });
-    }, [isDarkMode]);
-
-    useEffect(() => {
-        const handleThemeChange = (e: MediaQueryListEvent) => {
-            setIsDarkMode(e.matches);
-        };
-
-        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        darkModeMediaQuery.addEventListener('change', handleThemeChange);
-
-        // Set initial dark mode state
-        setIsDarkMode(darkModeMediaQuery.matches);
-
-        return () => {
-            darkModeMediaQuery.removeEventListener('change', handleThemeChange);
-        };
-    }, []);
+    }, [isDarkMode]); // Depend on isDarkMode to re-render on theme change
 
     // Additional effect to update text color on theme change
     useEffect(() => {
         const text = d3.selectAll('.label');
         text.style('fill', isDarkMode ? '#FFF' : '#000');
+
+        const legendText = d3.selectAll('.legend-item text');
+        legendText.style('fill', isDarkMode ? '#FFF' : '#333');
     }, [isDarkMode]);
 
     const drag = (simulation: d3.Simulation<Node, undefined>) => {
