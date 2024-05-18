@@ -33,7 +33,7 @@
 
 !.goreleaser.yml
 
-# !Makefile
+!Makefile
 
 # ...even if they are in subdirectories
 !*/
