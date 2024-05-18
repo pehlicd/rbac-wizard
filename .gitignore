@@ -1,0 +1,40 @@
+# Ignore everything
+*
+
+# But not these files...
+!/.gitignore
+
+!*.go
+!go.sum
+!go.mod
+
+!README.md
+!LICENSE
+
+!ui/app/*
+!ui/components/*
+!ui/config/*
+!ui/public/*
+!ui/styles/*
+!ui/types/*
+!ui/.eslintrc.json
+!ui/.npmrc
+!ui/LICENSE
+!ui/next.config.js
+!ui/next-env.d.ts
+!ui/package.json
+!ui/postcss.config.js
+!ui/tailwind.config.js
+!ui/tsconfig.json
+
+!.github/*
+!.github/workflows/*
+!.github/ISSUE_TEMPLATE/*
+
+!.goreleaser.yml
+
+# !Makefile
+
+# ...even if they are in subdirectories
+!*/
+
