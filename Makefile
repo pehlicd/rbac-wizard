@@ -1,5 +1,8 @@
-serve:
+serve: build-ui-completely
 	go run . serve
+
+run-ui:
+	cd ui && npm run dev
 
 build-ui:
 	cd ui && npm run build

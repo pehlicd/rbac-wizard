@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import axios from "axios";
 import { useTheme } from 'next-themes';
+import debounce from 'lodash.debounce';
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;
@@ -35,6 +36,23 @@ type BindingData = {
     roleRef: RoleRef;
     details?: string;
 };
+
+const Tooltip = ({ node, isDarkMode }: { node: Node; isDarkMode: boolean }) => (
+    <div style={{
+        position: 'absolute',
+        left: node.x,
+        top: node.y,
+        backgroundColor: isDarkMode ? '#333' : 'white',
+        color: isDarkMode ? 'white' : 'black',
+        padding: '2px 5px',
+        border: `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
+        borderRadius: '3px',
+        pointerEvents: 'none',  // Prevents tooltip from interfering with mouse events
+        transform: 'translate(-50%, -100%)',  // Adjust the position to the top and center
+    }}>
+        {node.label}
+    </div>
+);
 
 const DisjointGraph = () => {
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -125,8 +143,8 @@ const DisjointGraph = () => {
                 .attr('r', 10)
                 .attr('fill', d => d.kind === 'ClusterRoleBinding' ? 'orange' : d.kind === 'RoleBinding' ? 'green' : 'pink')
                 .call(drag(simulation) as any)
-                .on('mouseover', (_event, d) => setHoveredNode(d))
-                .on('mouseout', () => setHoveredNode(null));
+                .on('mouseover', debounce((_event, d) => setHoveredNode(d), 50))
+                .on('mouseout', debounce(() => setHoveredNode(null), 50));
 
             const text = g.selectAll('.label')
                 .data(nodes)
@@ -137,7 +155,7 @@ const DisjointGraph = () => {
                 .text(d => d.label)
                 .style('font-size', '12px')
                 .style('fill', isDarkMode ? '#FFF' : '#000')
-                .style('text-anchor', '-moz-initial');
+                .style('text-anchor', 'middle'); // Center the text
 
             simulation.on('tick', () => {
                 link
@@ -227,21 +245,10 @@ const DisjointGraph = () => {
     };
 
     return (
-        <div style={{ width: '100%', height: '100%' }}>
+        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <svg ref={svgRef} style={{ width: '100%', height: '100%' }}></svg>
             {hoveredNode && (
-                <div style={{
-                    position: 'absolute',
-                    left: hoveredNode.x,
-                    top: hoveredNode.y,
-                    backgroundColor: isDarkMode ? '#333' : 'white',
-                    color: isDarkMode ? 'white' : 'black',
-                    padding: '2px 5px',
-                    border: `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
-                    borderRadius: '3px'
-                }}>
-                    {hoveredNode.label}
-                </div>
+                <Tooltip node={hoveredNode} isDarkMode={isDarkMode} />
             )}
         </div>
     );

@@ -36,7 +36,7 @@ const kindColorMap: Record<string, ChipProps["color"]> = {
 
 const columns = [
     {name: "NAME", uid: "name", sortable: true},
-    {name: "KIND", uid: "kind", sortable: true},
+    {name: "KIND", uid: "kind"},
     {name: "SUBJECTS", uid: "subjects"},
     {name: "ROLE REF", uid: "role_ref"},
     {name: "DETAILS", uid: "details"},
@@ -80,7 +80,7 @@ export default function MainTable() {
         direction: "ascending",
     });
     const [isModalOpen, setIsModalOpen] = React.useState(false);
-    const [modalData, setModalData] = React.useState<BindingData | null>(null);
+    const [modalData, setModalData] = React.useState<BindingData | any | null>(null);
     const [page, setPage] = React.useState(1);
     const hasSearchFilter = Boolean(filterValue);
 
@@ -153,7 +153,7 @@ export default function MainTable() {
                 return (
                     <div>
                         {data.subjects?.map((subject: Subject, index) => (
-                            <p key={index}>{subject.kind} - {subject.apiGroup} - {subject.name}</p>
+                            <p key={index}>{subject.kind} - {subject.name}</p>
                         ))}
                     </div>
                 );
@@ -169,7 +169,7 @@ export default function MainTable() {
                         <Dropdown>
                             <DropdownTrigger>
                                 <Button isIconOnly size="sm" variant="light">
-                                    <VerticalDotsIcon className="text-default-300" />
+                                    <VerticalDotsIcon className="text-default-300"/>
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu>
@@ -334,6 +334,7 @@ export default function MainTable() {
                     <Table
                         aria-label="Example table with custom cells, pagination and sorting"
                         isHeaderSticky
+                        isStriped
                         bottomContent={bottomContent}
                         bottomContentPlacement="outside"
                         classNames={{
@@ -351,7 +352,7 @@ export default function MainTable() {
                             {(column) => (
                                 <TableColumn
                                     key={column.uid}
-                                    align={column.uid === "actions" ? "center" : "start"}
+                                    align={column.uid === "details" ? "center" : "start"}
                                     allowsSorting={column.sortable}
                                 >
                                     {column.name}
