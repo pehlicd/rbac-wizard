@@ -17,6 +17,13 @@ RBAC Wizard is a tool that helps you visualize and analyze the RBAC configuratio
 
 ## How to install
 
+### Homebrew
+
+```bash
+brew tap pehlicd/rbac-wizard
+brew install rbac-wizard
+```
+
 ### Using go install
 
 ```bash
