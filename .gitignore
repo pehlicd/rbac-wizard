@@ -36,6 +36,7 @@
 !Makefile
 
 !assets/*
+!rbac-wizard.rb
 
 # ...even if they are in subdirectories
 !*/
