@@ -1,5 +1,5 @@
-<div align="center" style="padding-top: 5px">
-    <img src="/ui/public/rbac-wizard-logo-embedded.svg?raw=true" width="120">
+<div align="center" style="padding-top: 20px">
+    <img src="/ui/public/rbac-wizard-logo-embedded.svg?raw=true" width="120" style="background-color: blue; border-radius: 50%;">
 </div>
 
 # RBAC Wizard
