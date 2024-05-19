@@ -35,6 +35,8 @@
 
 !Makefile
 
+!assets/*
+
 # ...even if they are in subdirectories
 !*/
 
