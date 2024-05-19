@@ -20,7 +20,7 @@ RBAC Wizard is a tool that helps you visualize and analyze the RBAC configuratio
 ### Homebrew
 
 ```bash
-brew tap pehlicd/rbac-wizard
+brew tap pehlicd/rbac-wizard https://github.com/pehlicd/rbac-wizard
 brew install rbac-wizard
 ```
 
