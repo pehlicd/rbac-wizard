@@ -19,11 +19,11 @@ import {
     ChipProps,
     SortDescriptor
 } from "@nextui-org/react";
-import {SearchIcon, VerticalDotsIcon, ChevronDownIcon, RefreshIcon} from "@/components/icons";
-import {Modal, ModalBody, ModalContent, ModalHeader} from "@nextui-org/modal";
-import {Card, CardBody, CardHeader} from "@nextui-org/card";
-import { stringify } from 'yaml';
+import { SearchIcon, VerticalDotsIcon, ChevronDownIcon, RefreshIcon, CopyIcon } from "@/components/icons";
+import { Modal, ModalBody, ModalContent } from "@nextui-org/modal";
+import { Card, CardBody, CardHeader } from "@nextui-org/card";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 function capitalize(str: string) {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -35,16 +35,16 @@ const kindColorMap: Record<string, ChipProps["color"]> = {
 };
 
 const columns = [
-    {name: "NAME", uid: "name", sortable: true},
-    {name: "KIND", uid: "kind"},
-    {name: "SUBJECTS", uid: "subjects"},
-    {name: "ROLE REF", uid: "role_ref"},
-    {name: "DETAILS", uid: "details"},
+    { name: "NAME", uid: "name", sortable: true },
+    { name: "KIND", uid: "kind" },
+    { name: "SUBJECTS", uid: "subjects" },
+    { name: "ROLE REF", uid: "role_ref" },
+    { name: "DETAILS", uid: "details" },
 ];
 
 const kindOptions = [
-    {name: "ClusterRoleBinding", uid: "ClusterRoleBinding"},
-    {name: "RoleBinding", uid: "RoleBinding"},
+    { name: "ClusterRoleBinding", uid: "ClusterRoleBinding" },
+    { name: "RoleBinding", uid: "RoleBinding" },
 ];
 
 type Subject = {
@@ -88,6 +88,20 @@ export default function MainTable() {
         axios.get('/api/data')
             .then(response => setData(response.data))
             .catch(error => console.error('Error fetching data:', error));
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsModalOpen(false);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
     }, []);
 
     const headerColumns = React.useMemo(() => {
@@ -167,12 +181,12 @@ export default function MainTable() {
                 return (
                     <div className="relative flex justify-center items-center gap-2">
                         <Dropdown>
-                            <DropdownTrigger>
+                            <DropdownTrigger aria-label="More options">
                                 <Button isIconOnly size="sm" variant="light">
-                                    <VerticalDotsIcon className="text-default-300"/>
+                                    <VerticalDotsIcon className="text-default-300" />
                                 </Button>
                             </DropdownTrigger>
-                            <DropdownMenu>
+                            <DropdownMenu aria-label="Details options">
                                 <DropdownItem onClick={
                                     () => {
                                         setModalData(data); // Set the binding data to the modalData state
@@ -214,10 +228,10 @@ export default function MainTable() {
         }
     }, []);
 
-    const onClear = React.useCallback(()=>{
+    const onClear = React.useCallback(() => {
         setFilterValue("")
         setPage(1)
-    },[])
+    }, [])
 
     const topContent = React.useMemo(() => {
         return (
@@ -234,14 +248,14 @@ export default function MainTable() {
                     />
                     <div className="flex gap-3">
                         <Dropdown>
-                            <DropdownTrigger className="hidden sm:flex">
+                            <DropdownTrigger className="hidden sm:flex" aria-label="Filter by kind">
                                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                                     Kind
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu
                                 disallowEmptySelection
-                                aria-label="Table Columns"
+                                aria-label="Kind filter options"
                                 closeOnSelect={false}
                                 selectedKeys={kindFilter}
                                 selectionMode="multiple"
@@ -255,14 +269,14 @@ export default function MainTable() {
                             </DropdownMenu>
                         </Dropdown>
                         <Dropdown>
-                            <DropdownTrigger className="hidden sm:flex">
+                            <DropdownTrigger className="hidden sm:flex" aria-label="Select columns">
                                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                                     Columns
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu
                                 disallowEmptySelection
-                                aria-label="Table Columns"
+                                aria-label="Column selection options"
                                 closeOnSelect={false}
                                 selectedKeys={visibleColumns}
                                 selectionMode="multiple"
@@ -322,6 +336,18 @@ export default function MainTable() {
         );
     }, [page, pages, onPreviousPage, onNextPage]);
 
+    const copyToClipboard = async () => {
+        if (modalData && modalData.raw) {
+            try {
+                await navigator.clipboard.writeText(modalData.raw);
+                toast.success("Successfully copied to the clipboard!");
+            } catch (err) {
+                toast.error("Failed to copy to the clipboard!");
+                console.error("Failed to copy to the clipboard:", err)
+            }
+        }
+    };
+
     return (
         <>
             <Card
@@ -369,7 +395,7 @@ export default function MainTable() {
                     </Table>
                     {/* Modal to display the data */}
                     <Modal
-                        size="xl"
+                        size="3xl"
                         radius="md"
                         shadow="lg"
                         motionProps={{
@@ -394,14 +420,18 @@ export default function MainTable() {
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
                     >
-                        <ModalHeader>View Data</ModalHeader>
                         <ModalContent>
                             <ModalBody>
-                                <Card className="p-2 m-3" isBlurred shadow="sm">
-                                    <CardBody>
-                                    <pre className="overflow-auto">
-                                      {modalData && stringify(modalData, null, 2)} {/*TODO: Display the raw data here*/}
-                                    </pre>
+                                <Card className="p-2 m-3" isBlurred shadow="sm" style={{ maxHeight: '70vh', overflow: 'auto' }}>
+                                    <CardBody className="relative">
+                                        <div className="absolute top-0 right-0 mb-2">
+                                            <Button isIconOnly size="sm" variant="light" aria-label="Copy data" onClick={copyToClipboard}>
+                                                <CopyIcon className="text-default-300" />
+                                            </Button>
+                                        </div>
+                                            <pre style={{ whiteSpace: 'pre-wrap' }}>
+                                                {modalData && modalData.raw}
+                                            </pre>
                                     </CardBody>
                                 </Card>
                             </ModalBody>
@@ -409,7 +439,6 @@ export default function MainTable() {
                     </Modal>
                 </CardBody>
             </Card>
-
         </>
     );
 }
