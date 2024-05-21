@@ -171,9 +171,10 @@ const DisjointGraph = () => {
             .attr('x', d => d.x!)
             .attr('y', d => d.y!)
             .text(d => d.label)
-            .style('font-size', '12px')
+            .style('font-size', '13px')
             .style('fill', isDarkMode ? '#FFF' : '#000')
-            .style('text-anchor', 'middle');
+            .style('text-anchor', '-moz-initial')
+            .style('font-weight', 'bold');
 
         simulation.on('tick', () => {
             link
@@ -189,26 +190,6 @@ const DisjointGraph = () => {
             text
                 .attr('x', d => d.x!)
                 .attr('y', d => d.y!);
-        });
-
-        // Center the graph after the simulation is done
-        simulation.on('end', () => {
-            const bounds = g.node()?.getBBox();
-            if (bounds) {
-                const fullWidth = bounds.width;
-                const fullHeight = bounds.height;
-                const midX = bounds.x + fullWidth / 2;
-                const midY = bounds.y + fullHeight / 2;
-                const scale = 0.85 / Math.max(fullWidth / width, fullHeight / height);
-                const translate = [width / 2 - scale * midX, height / 2 - scale * midY];
-
-                svg.transition()
-                    .duration(750)
-                    .call(
-                        zoom.transform as any,
-                        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-                    );
-            }
         });
 
         // Legend
