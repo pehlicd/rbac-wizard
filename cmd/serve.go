@@ -95,6 +95,7 @@ func serve(port string) {
 
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	// Set cache control headers
+	cacheControllers(w)
 
 	statikFS, err := fs.New()
 	if err != nil {
@@ -107,9 +108,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 	// Set cache control headers
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
+	cacheControllers(w)
 
 	// Get the bindings
 	bindings, err := internal.Generator(app).GetBindings()
@@ -128,4 +127,11 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	// Write the bindings to the response
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(byteData)
+}
+
+func cacheControllers(w http.ResponseWriter) {
+	// Set cache control headers
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 }

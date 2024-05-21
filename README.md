@@ -4,6 +4,10 @@
 
 # RBAC Wizard
 
+![go version](https://img.shields.io/github/go-mod/go-version/pehlicd/rbac-wizard)
+![release](https://img.shields.io/github/v/release/pehlicd/rbac-wizard)
+![license](https://img.shields.io/github/license/pehlicd/rbac-wizard) ![go report](https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)
+
 RBAC Wizard is a tool that helps you visualize and analyze the RBAC configurations of your Kubernetes cluster. It provides a graphical representation of the Kubernetes RBAC objects.
 
 <div align="center">
