@@ -312,7 +312,7 @@ const DisjointGraph = () => {
                         <SelectItem key={node.id} value={node.id}>{node.label}</SelectItem>
                     ))}
                 </Select>
-                <Button onClick={handleResetSelection}>Reset</Button>
+                <Button color="secondary" onClick={handleResetSelection}>Reset</Button>
             </div>
             <svg ref={svgRef} style={{ width: '100%', height: '100%' }}></svg>
             {hoveredNode && (

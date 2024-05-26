@@ -30,12 +30,6 @@ export default function WhatIfPage() {
 
     return (
         <section style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {/*<div style={{*/}
-            {/*    position: 'absolute', top: '10px', right: '10px', background: '#ff5733', color: 'white', padding: '5px 10px', borderRadius: '3px',*/}
-            {/*    fontWeight: 'bold', zIndex: 1000*/}
-            {/*}}>*/}
-            {/*    Beta*/}
-            {/*</div>*/}
             <div style={{ display: 'flex', flexDirection: 'row', flexGrow: 1 }}>
                 <Card className="p-4" style={{ flex: 1, marginRight: '5px' }}>
                     <Badge content="Beta" color="warning" size="md" className="absolute">
@@ -65,7 +59,7 @@ export default function WhatIfPage() {
                     </CardBody>
                 </Card>
             </div>
-            <Button onClick={handleGenerateClick} style={{ marginTop: '10px', marginBottom: '10px', width: '100%' }}>Generate</Button>
+            <Button onClick={handleGenerateClick} color="primary" variant="shadow" style={{ marginTop: '10px', marginBottom: '10px', width: '100%' }}>Generate</Button>
         </section>
     );
 }
