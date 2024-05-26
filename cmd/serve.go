@@ -29,6 +29,9 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+	"io"
+	"k8s.io/api/rbac/v1"
 	"log"
 	"net/http"
 )
@@ -78,9 +81,21 @@ func serve(port string) {
 		AllowCredentials: true,
 	})
 
+	// Set up statik filesystem
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Set up handlers
-	http.HandleFunc("/", dashboardHandler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "index.html")
+	})
+	http.HandleFunc("/what-if", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "what-if.html")
+	})
 	http.HandleFunc("/api/data", dataHandler)
+	http.HandleFunc("/api/what-if", whatIfHandler)
 
 	handler := c.Handler(http.DefaultServeMux)
 
@@ -93,17 +108,34 @@ func serve(port string) {
 	}
 }
 
-func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
 	// Set cache control headers
 	cacheControllers(w)
 
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
+	path := r.URL.Path
+	if path == "/" {
+		path = "/" + defaultFile
 	}
 
-	// Serve the embedded frontend
-	http.FileServer(statikFS).ServeHTTP(w, r)
+	file, err := statikFS.Open(path)
+	if err != nil {
+		// If the file is not found, serve the default file (index.html)
+		file, err = statikFS.Open("/" + defaultFile)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+	}
+	defer file.Close()
+
+	// Get the file information
+	fileInfo, err := file.Stat()
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
 func dataHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,4 +166,74 @@ func cacheControllers(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
+}
+
+func whatIfHandler(w http.ResponseWriter, r *http.Request) {
+	cacheControllers(w)
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+
+	var input struct {
+		Yaml string `json:"yaml"`
+	}
+
+	if err := json.Unmarshal(body, &input); err != nil {
+		http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
+		return
+	}
+
+	var obj interface{}
+	if err := yaml.Unmarshal([]byte(input.Yaml), &obj); err != nil {
+		http.Error(w, "Invalid YAML format", http.StatusBadRequest)
+		return
+	}
+
+	var responseData struct {
+		Nodes []interface{} `json:"nodes"`
+		Links []interface{} `json:"links"`
+	}
+
+	if obj == nil {
+		http.Error(w, "Empty object", http.StatusBadRequest)
+		return
+	}
+
+	switch obj.(map[interface{}]interface{})["kind"] {
+	case "ClusterRoleBinding":
+		crb := &v1.ClusterRoleBinding{}
+		if err := yaml.Unmarshal([]byte(input.Yaml), crb); err != nil {
+			http.Error(w, "Failed to parse ClusterRoleBinding", http.StatusBadRequest)
+			return
+		}
+		responseData = internal.Generator(app).ProcessClusterRoleBinding(crb)
+	case "RoleBinding":
+		rb := &v1.RoleBinding{}
+		if err := yaml.Unmarshal([]byte(input.Yaml), rb); err != nil {
+			http.Error(w, "Failed to parse RoleBinding", http.StatusBadRequest)
+			return
+		}
+		responseData = internal.Generator(app).ProcessRoleBinding(rb)
+	default:
+		http.Error(w, "Unsupported resource type", http.StatusBadRequest)
+		fmt.Println("Unsupported resource type ", obj, " of type ", fmt.Sprintf("%T", obj))
+		return
+	}
+
+	respData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, "Failed to marshal response data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respData)
 }

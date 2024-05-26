@@ -292,6 +292,7 @@ const DisjointGraph = () => {
 
     const handleResetSelection = () => {
         setSelectedNodes(new Set());
+        if (selectedNodes.size === 0) return; // Nothing to reset
         renderGraph(allNodes, allLinks, new Set());
     };
 
@@ -300,8 +301,8 @@ const DisjointGraph = () => {
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '10px' }}>
                 <Select
                     multiple
-                    aria-label="Select nodes"
-                    placeholder="Select nodes"
+                    aria-label="Select bindings"
+                    placeholder="Select bindings"
                     selectedKeys={Array.from(selectedNodes)}
                     onSelectionChange={handleSelectionChange}
                     selectionMode="multiple"

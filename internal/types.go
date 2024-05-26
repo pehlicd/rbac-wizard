@@ -11,6 +11,14 @@ type App struct {
 
 type Generator interface {
 	GetBindings() (*Bindings, error)
+	ProcessClusterRoleBinding(crb *v1.ClusterRoleBinding) struct {
+		Nodes []interface{} `json:"nodes"`
+		Links []interface{} `json:"links"`
+	}
+	ProcessRoleBinding(rb *v1.RoleBinding) struct {
+		Nodes []interface{} `json:"nodes"`
+		Links []interface{} `json:"links"`
+	}
 }
 
 type Bindings struct {

@@ -9,6 +9,9 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@emotion/react": "^11.11.4",
+		"@emotion/styled": "^11.11.5",
+		"@monaco-editor/react": "^4.6.0",
 		"@nextui-org/button": "^2.0.31",
 		"@nextui-org/code": "^2.0.27",
 		"@nextui-org/input": "^2.1.21",
@@ -37,15 +40,20 @@
 		"next": "^14.2.3",
 		"next-themes": "^0.2.1",
 		"postcss": "8.4.38",
-		"react": "18.2.0",
-		"react-dom": "18.2.0",
+		"react": "^17.0.0 || ^18.0.0",
+		"react-dom": "^17.0.0 || ^18.0.0",
 		"react-icons": "^5.2.1",
 		"react-toastify": "^10.0.5",
+		"styled-components": "^6.1.11",
 		"tailwind-variants": "^0.1.20",
 		"tailwindcss": "3.4.3",
 		"typescript": "5.0.4"
 	},
 	"devDependencies": {
 		"@types/d3": "^7.4.3"
+	},
+	"peerDependencies": {
+		"react": "^17.0.0 || ^18.0.0",
+		"react-dom": "^17.0.0 || ^18.0.0"
 	}
 }
