@@ -120,30 +120,30 @@ func fetchSubjectDetails(client *kubernetes.Clientset, subject v1.Subject) *Node
 		}
 	}
 	return &Node{
-		ID:       subject.Name + "-" + subject.Kind,
+		ID:       subject.Kind + "-" + subject.Name,
 		Kind:     subject.Kind,
 		ApiGroup: subject.APIGroup,
-		Label:    subject.Kind + ": " + subject.Name,
+		Label:    subject.Kind + "-" + subject.Name,
 	}
 }
 
 func fetchRoleRefDetails(client *kubernetes.Clientset, roleRef v1.RoleRef) *Node {
 	switch roleRef.Kind {
 	case "ClusterRole":
-		clusterRole, err := client.RbacV1().ClusterRoles().Get(context.TODO(), roleRef.Name, metav1.GetOptions{})
+		_, err := client.RbacV1().ClusterRoles().Get(context.TODO(), roleRef.Name, metav1.GetOptions{})
 		if err != nil {
 			fmt.Printf("Error fetching cluster role: %v\n", err)
 			return nil
 		}
 		return &Node{
-			ID:       clusterRole.Name + "-" + clusterRole.Kind,
-			Kind:     clusterRole.Kind,
-			ApiGroup: clusterRole.APIVersion,
-			Label:    clusterRole.Kind + "-" + clusterRole.Name,
+			ID:       roleRef.Kind + "-" + roleRef.Name,
+			Kind:     roleRef.Kind,
+			ApiGroup: roleRef.APIGroup,
+			Label:    roleRef.Kind + "-" + roleRef.Name,
 		}
 	case "Role":
 		return &Node{
-			ID:       roleRef.Name + "-" + roleRef.Kind,
+			ID:       roleRef.Kind + "-" + roleRef.Name,
 			Kind:     roleRef.Kind,
 			ApiGroup: roleRef.APIGroup,
 			Label:    roleRef.Kind + "-" + roleRef.Name,
