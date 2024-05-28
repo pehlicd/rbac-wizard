@@ -19,6 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 package cmd
 
 import (
@@ -32,6 +33,9 @@ import (
 	"gopkg.in/yaml.v2"
 	"io"
 	"k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"log"
 	"net/http"
 )
@@ -65,16 +69,16 @@ func serve(port string) {
 
 	// Set up CORS
 	c := cors.New(cors.Options{
-		AllowOriginRequestFunc: func(r *http.Request, origin string) bool {
+		AllowOriginVaryRequestFunc: func(r *http.Request, origin string) (bool, []string) {
 			// Implement your dynamic origin check here
 			host := r.Host // Extract the host from the request
 			allowedOrigins := []string{"http://localhost:" + port, "https://" + host, "http://localhost:3000"}
 			for _, allowedOrigin := range allowedOrigins {
 				if origin == allowedOrigin {
-					return true
+					return true, []string{"Origin"}
 				}
 			}
-			return false
+			return false, nil
 		},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "X-CSRF-Token"},
@@ -100,8 +104,7 @@ func serve(port string) {
 	handler := c.Handler(http.DefaultServeMux)
 
 	// Start the server
-	serverURL := fmt.Sprintf("http://localhost:%s", port)
-	startupMessage := fmt.Sprintf("Starting dashboard server on %s", serverURL)
+	startupMessage := fmt.Sprintf("Starting rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
 	fmt.Println(startupMessage)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Failed to start server: %v\n", err)
@@ -138,7 +141,7 @@ func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.R
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
-func dataHandler(w http.ResponseWriter, r *http.Request) {
+func dataHandler(w http.ResponseWriter, _ *http.Request) {
 	// Set cache control headers
 	cacheControllers(w)
 
@@ -158,7 +161,11 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Write the bindings to the response
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(byteData)
+	_, err = w.Write(byteData)
+	if err != nil {
+		http.Error(w, "Failed to write data", http.StatusInternalServerError)
+		return
+	}
 }
 
 func cacheControllers(w http.ResponseWriter) {
@@ -198,8 +205,8 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var responseData struct {
-		Nodes []interface{} `json:"nodes"`
-		Links []interface{} `json:"links"`
+		Nodes []internal.Node `json:"nodes"`
+		Links []internal.Link `json:"links"`
 	}
 
 	if obj == nil {
@@ -207,21 +214,35 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decode := kyaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	uObj := &unstructured.Unstructured{}
+	_, _, err = decode.Decode([]byte(input.Yaml), nil, uObj)
+	if err != nil {
+		http.Error(w, "Failed to parse ClusterRoleBinding", http.StatusBadRequest)
+		fmt.Printf("Failed to parse ClusterRoleBinding: %v\n", err)
+		return
+	}
+
 	switch obj.(map[interface{}]interface{})["kind"] {
 	case "ClusterRoleBinding":
 		crb := &v1.ClusterRoleBinding{}
-		if err := yaml.Unmarshal([]byte(input.Yaml), crb); err != nil {
-			http.Error(w, "Failed to parse ClusterRoleBinding", http.StatusBadRequest)
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), crb)
+		if err != nil {
+			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
+			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
 			return
 		}
-		responseData = internal.Generator(app).ProcessClusterRoleBinding(crb)
+
+		responseData = internal.WhatIfGenerator(app).ProcessClusterRoleBinding(crb)
 	case "RoleBinding":
 		rb := &v1.RoleBinding{}
-		if err := yaml.Unmarshal([]byte(input.Yaml), rb); err != nil {
-			http.Error(w, "Failed to parse RoleBinding", http.StatusBadRequest)
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), rb)
+		if err != nil {
+			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
+			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
 			return
 		}
-		responseData = internal.Generator(app).ProcessRoleBinding(rb)
+		responseData = internal.WhatIfGenerator(app).ProcessRoleBinding(rb)
 	default:
 		http.Error(w, "Unsupported resource type", http.StatusBadRequest)
 		fmt.Println("Unsupported resource type ", obj, " of type ", fmt.Sprintf("%T", obj))
@@ -235,5 +256,9 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(respData)
+	_, err = w.Write(respData)
+	if err != nil {
+		http.Error(w, "Failed to write response data", http.StatusInternalServerError)
+		return
+	}
 }

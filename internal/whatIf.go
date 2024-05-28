@@ -1,115 +1,154 @@
+/*
+Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
 package internal
 
 import (
 	"context"
+	"fmt"
 	"k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func (app App) ProcessClusterRoleBinding(crb *v1.ClusterRoleBinding) (data struct {
-	Nodes []interface{} `json:"nodes"`
-	Links []interface{} `json:"links"`
-}) {
-	for _, subject := range crb.Subjects {
-		data.Nodes = append(data.Nodes, map[string]string{
-			"id":       subject.Name,
-			"kind":     subject.Kind,
-			"apiGroup": subject.APIGroup,
-		})
-	}
+type Node struct {
+	ID       string `json:"id"`
+	Kind     string `json:"kind"`
+	ApiGroup string `json:"apiGroup"`
+	Label    string `json:"label"`
+}
 
-	data.Nodes = append(data.Nodes, map[string]string{
-		"id":       crb.RoleRef.Name,
-		"kind":     crb.RoleRef.Kind,
-		"apiGroup": crb.RoleRef.APIGroup,
+type Link struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
+func (app App) ProcessClusterRoleBinding(crb *v1.ClusterRoleBinding) (data struct {
+	Nodes []Node `json:"nodes"`
+	Links []Link `json:"links"`
+}) {
+	crbNodeID := crb.Kind + "-" + crb.Name
+	data.Nodes = append(data.Nodes, Node{
+		ID:       crbNodeID,
+		Kind:     crb.Kind,
+		ApiGroup: crb.APIVersion,
+		Label:    crbNodeID,
 	})
+
+	for _, subject := range crb.Subjects {
+		subjectInfo := fetchSubjectDetails(app.KubeClient, subject)
+		if subjectInfo != nil {
+			data.Nodes = append(data.Nodes, *subjectInfo)
+			data.Links = append(data.Links, Link{
+				Source: crbNodeID,
+				Target: subjectInfo.ID,
+			})
+		}
+	}
 
 	roleRefInfo := fetchRoleRefDetails(app.KubeClient, crb.RoleRef)
-	data.Nodes = append(data.Nodes, roleRefInfo)
-
-	for _, subject := range crb.Subjects {
-		data.Links = append(data.Links, map[string]string{
-			"source": crb.Name,
-			"target": subject.Name,
+	if roleRefInfo != nil {
+		data.Nodes = append(data.Nodes, *roleRefInfo)
+		data.Links = append(data.Links, Link{
+			Source: crbNodeID,
+			Target: roleRefInfo.ID,
 		})
 	}
-
-	data.Links = append(data.Links, map[string]string{
-		"source": crb.Name,
-		"target": crb.RoleRef.Name,
-	})
 
 	return data
 }
 
 func (app App) ProcessRoleBinding(rb *v1.RoleBinding) (data struct {
-	Nodes []interface{} `json:"nodes"`
-	Links []interface{} `json:"links"`
+	Nodes []Node `json:"nodes"`
+	Links []Link `json:"links"`
 }) {
-	for _, subject := range rb.Subjects {
-		subjectInfo := fetchSubjectDetails(subject)
-		data.Nodes = append(data.Nodes, subjectInfo)
-	}
-
-	data.Nodes = append(data.Nodes, map[string]interface{}{
-		"id":       rb.RoleRef.Name,
-		"kind":     rb.RoleRef.Kind,
-		"apiGroup": rb.RoleRef.APIGroup,
+	rbNodeID := rb.Kind + "-" + rb.Name
+	data.Nodes = append(data.Nodes, Node{
+		ID:       rbNodeID,
+		Kind:     rb.Kind,
+		ApiGroup: rb.APIVersion,
+		Label:    rbNodeID,
 	})
+
+	for _, subject := range rb.Subjects {
+		subjectInfo := fetchSubjectDetails(app.KubeClient, subject)
+		if subjectInfo != nil {
+			data.Nodes = append(data.Nodes, *subjectInfo)
+			data.Links = append(data.Links, Link{
+				Source: rbNodeID,
+				Target: subjectInfo.ID,
+			})
+		}
+	}
 
 	roleRefInfo := fetchRoleRefDetails(app.KubeClient, rb.RoleRef)
-	data.Nodes = append(data.Nodes, roleRefInfo)
-
-	for _, subject := range rb.Subjects {
-		data.Links = append(data.Links, map[string]interface{}{
-			"source": subject.Name,
-			"target": rb.RoleRef.Name,
+	if roleRefInfo != nil {
+		data.Nodes = append(data.Nodes, *roleRefInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: roleRefInfo.ID,
 		})
 	}
-
-	// also add roleBinding to the links
-	data.Links = append(data.Links, map[string]interface{}{
-		"source": rb.RoleRef.Name,
-		"target": rb.Name,
-	})
 
 	return data
 }
 
-func fetchSubjectDetails(subject v1.Subject) map[string]interface{} {
-	return map[string]interface{}{
-		"id":       subject.Name,
-		"kind":     subject.Kind,
-		"apiGroup": subject.APIGroup,
+func fetchSubjectDetails(client *kubernetes.Clientset, subject v1.Subject) *Node {
+	if subject.Kind == "ServiceAccount" {
+		_, err := client.CoreV1().ServiceAccounts(subject.Namespace).Get(context.TODO(), subject.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil
+		}
+	}
+	return &Node{
+		ID:       subject.Name + "-" + subject.Kind,
+		Kind:     subject.Kind,
+		ApiGroup: subject.APIGroup,
+		Label:    subject.Kind + ": " + subject.Name,
 	}
 }
 
-func fetchRoleRefDetails(client *kubernetes.Clientset, roleRef v1.RoleRef) map[string]string {
+func fetchRoleRefDetails(client *kubernetes.Clientset, roleRef v1.RoleRef) *Node {
 	switch roleRef.Kind {
 	case "ClusterRole":
-		// Fetch the ClusterRole details
 		clusterRole, err := client.RbacV1().ClusterRoles().Get(context.TODO(), roleRef.Name, metav1.GetOptions{})
 		if err != nil {
-			return map[string]string{}
+			fmt.Printf("Error fetching cluster role: %v\n", err)
+			return nil
 		}
-		return map[string]string{
-			"id":       clusterRole.Name,
-			"kind":     "ClusterRole",
-			"apiGroup": clusterRole.Kind,
+		return &Node{
+			ID:       clusterRole.Name + "-" + clusterRole.Kind,
+			Kind:     clusterRole.Kind,
+			ApiGroup: clusterRole.APIVersion,
+			Label:    clusterRole.Kind + "-" + clusterRole.Name,
 		}
 	case "Role":
-		// Fetch the Role details
-		role, err := client.RbacV1().Roles("").Get(context.TODO(), roleRef.Name, metav1.GetOptions{})
-		if err != nil {
-			return map[string]string{}
-		}
-		return map[string]string{
-			"id":       role.Name,
-			"kind":     "Role",
-			"apiGroup": role.Kind,
+		return &Node{
+			ID:       roleRef.Name + "-" + roleRef.Kind,
+			Kind:     roleRef.Kind,
+			ApiGroup: roleRef.APIGroup,
+			Label:    roleRef.Kind + "-" + roleRef.Name,
 		}
 	}
 
-	return map[string]string{}
+	return nil
 }

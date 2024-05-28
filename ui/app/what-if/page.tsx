@@ -1,11 +1,11 @@
 "use client";
 import Editor from '@monaco-editor/react';
 import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import {Badge, Button } from "@nextui-org/react";
+import { Badge, Button } from "@nextui-org/react";
 import { useTheme } from 'next-themes';
 import { useState } from 'react';
 import axios from 'axios';
-import WhatIfGraph from '@/components/whatIfGraph';
+import DisjointGraph from '@/components/graph';
 
 export default function WhatIfPage() {
     const { theme } = useTheme();
@@ -34,7 +34,7 @@ export default function WhatIfPage() {
                 <Card className="p-4" style={{ flex: 1, marginRight: '5px' }}>
                     <Badge content="Beta" color="warning" size="md" className="absolute">
                         <CardHeader>
-                                <h2>Editor</h2>
+                            <h2>Editor</h2>
                         </CardHeader>
                     </Badge>
                     <CardBody style={{ height: '100%', padding: 10 }}>
@@ -54,7 +54,7 @@ export default function WhatIfPage() {
                     </CardHeader>
                     <CardBody style={{ height: '100%', padding: 10 }}>
                         {graphData && graphData.nodes && graphData.links && (
-                            <WhatIfGraph data={graphData} />
+                            <DisjointGraph data={graphData} />
                         )}
                     </CardBody>
                 </Card>

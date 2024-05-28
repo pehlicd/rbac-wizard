@@ -1,15 +1,17 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import axios from "axios";
 import { useTheme } from 'next-themes';
 import debounce from 'lodash.debounce';
+import axios from "axios";
 import { Select, SelectItem, Button } from '@nextui-org/react';
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;
     kind?: string;
     label: string;
+    x?: number;
+    y?: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -55,7 +57,7 @@ const Tooltip = ({ node, isDarkMode }: { node: Node; isDarkMode: boolean }) => (
     </div>
 );
 
-const DisjointGraph = () => {
+const DisjointGraph = ({ data }: { data?: { nodes: Node[], links: Link[] } }) => {
     const svgRef = useRef<SVGSVGElement | null>(null);
     const [hoveredNode, setHoveredNode] = useState<Node | null>(null);
     const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
@@ -246,8 +248,12 @@ const DisjointGraph = () => {
             }
         };
 
-        fetchData().finally(() => { console.log('Data fetching completed'); });
-    }, [isDarkMode, renderGraph]);
+        if (!data) {
+            fetchData().finally(() => { console.log('Data fetching completed'); });
+        } else {
+            renderGraph(data.nodes, data.links, new Set());
+        }
+    }, [isDarkMode, renderGraph, data]);
 
     useEffect(() => {
         const text = d3.selectAll('.label');
