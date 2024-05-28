@@ -12,6 +12,7 @@
 !LICENSE
 
 !ui/app/*
+!ui/what-if/*
 !ui/components/*
 !ui/config/*
 !ui/public/*

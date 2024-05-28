@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    @apply bg-background font-sans antialiased;
+}
+
+.card-header {
+    @apply p-4;
+}
+
+.card-body {
+    @apply p-4;
+}

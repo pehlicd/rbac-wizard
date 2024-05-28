@@ -19,6 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 package cmd
 
 import (
@@ -29,6 +30,12 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+	"io"
+	"k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"log"
 	"net/http"
 )
@@ -62,51 +69,79 @@ func serve(port string) {
 
 	// Set up CORS
 	c := cors.New(cors.Options{
-		AllowOriginRequestFunc: func(r *http.Request, origin string) bool {
+		AllowOriginVaryRequestFunc: func(r *http.Request, origin string) (bool, []string) {
 			// Implement your dynamic origin check here
 			host := r.Host // Extract the host from the request
 			allowedOrigins := []string{"http://localhost:" + port, "https://" + host, "http://localhost:3000"}
 			for _, allowedOrigin := range allowedOrigins {
 				if origin == allowedOrigin {
-					return true
+					return true, []string{"Origin"}
 				}
 			}
-			return false
+			return false, nil
 		},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	})
 
+	// Set up statik filesystem
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Set up handlers
-	http.HandleFunc("/", dashboardHandler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "index.html")
+	})
+	http.HandleFunc("/what-if", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "what-if.html")
+	})
 	http.HandleFunc("/api/data", dataHandler)
+	http.HandleFunc("/api/what-if", whatIfHandler)
 
 	handler := c.Handler(http.DefaultServeMux)
 
 	// Start the server
-	serverURL := fmt.Sprintf("http://localhost:%s", port)
-	startupMessage := fmt.Sprintf("Starting dashboard server on %s", serverURL)
+	startupMessage := fmt.Sprintf("Starting rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
 	fmt.Println(startupMessage)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Failed to start server: %v\n", err)
 	}
 }
 
-func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
 	// Set cache control headers
 	cacheControllers(w)
 
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
+	path := r.URL.Path
+	if path == "/" {
+		path = "/" + defaultFile
 	}
 
-	// Serve the embedded frontend
-	http.FileServer(statikFS).ServeHTTP(w, r)
+	file, err := statikFS.Open(path)
+	if err != nil {
+		// If the file is not found, serve the default file (index.html)
+		file, err = statikFS.Open("/" + defaultFile)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+	}
+	defer file.Close()
+
+	// Get the file information
+	fileInfo, err := file.Stat()
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
-func dataHandler(w http.ResponseWriter, r *http.Request) {
+func dataHandler(w http.ResponseWriter, _ *http.Request) {
 	// Set cache control headers
 	cacheControllers(w)
 
@@ -126,7 +161,11 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Write the bindings to the response
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(byteData)
+	_, err = w.Write(byteData)
+	if err != nil {
+		http.Error(w, "Failed to write data", http.StatusInternalServerError)
+		return
+	}
 }
 
 func cacheControllers(w http.ResponseWriter) {
@@ -134,4 +173,92 @@ func cacheControllers(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
+}
+
+func whatIfHandler(w http.ResponseWriter, r *http.Request) {
+	cacheControllers(w)
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+
+	var input struct {
+		Yaml string `json:"yaml"`
+	}
+
+	if err := json.Unmarshal(body, &input); err != nil {
+		http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
+		return
+	}
+
+	var obj interface{}
+	if err := yaml.Unmarshal([]byte(input.Yaml), &obj); err != nil {
+		http.Error(w, "Invalid YAML format", http.StatusBadRequest)
+		return
+	}
+
+	var responseData struct {
+		Nodes []internal.Node `json:"nodes"`
+		Links []internal.Link `json:"links"`
+	}
+
+	if obj == nil {
+		http.Error(w, "Empty object", http.StatusBadRequest)
+		return
+	}
+
+	decode := kyaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	uObj := &unstructured.Unstructured{}
+	_, _, err = decode.Decode([]byte(input.Yaml), nil, uObj)
+	if err != nil {
+		http.Error(w, "Failed to parse ClusterRoleBinding", http.StatusBadRequest)
+		fmt.Printf("Failed to parse ClusterRoleBinding: %v\n", err)
+		return
+	}
+
+	switch obj.(map[interface{}]interface{})["kind"] {
+	case "ClusterRoleBinding":
+		crb := &v1.ClusterRoleBinding{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), crb)
+		if err != nil {
+			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
+			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
+			return
+		}
+
+		responseData = internal.WhatIfGenerator(app).ProcessClusterRoleBinding(crb)
+	case "RoleBinding":
+		rb := &v1.RoleBinding{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), rb)
+		if err != nil {
+			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
+			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
+			return
+		}
+		responseData = internal.WhatIfGenerator(app).ProcessRoleBinding(rb)
+	default:
+		http.Error(w, "Unsupported resource type", http.StatusBadRequest)
+		fmt.Println("Unsupported resource type ", obj, " of type ", fmt.Sprintf("%T", obj))
+		return
+	}
+
+	respData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, "Failed to marshal response data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(respData)
+	if err != nil {
+		http.Error(w, "Failed to write response data", http.StatusInternalServerError)
+		return
+	}
 }

@@ -6,11 +6,19 @@ export const siteConfig = {
 			label: "Dashboard",
 			href: "/",
 		},
+		{
+			label: "What If?",
+			href: "/what-if",
+		},
 	],
 	navMenuItems: [
 		{
 			label: "Dashboard",
 			href: "/",
+		},
+		{
+			label: "What If?",
+			href: "/what-if",
 		},
 	],
 	links: {

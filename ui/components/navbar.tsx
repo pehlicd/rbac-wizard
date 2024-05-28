@@ -20,12 +20,29 @@ import {
 	GithubIcon,
 	Logo,
 } from "@/components/icons";
-import {Divider} from "@nextui-org/divider";
 
 export const Navbar = () => {
 	return (
 		<>
-			<NextUINavbar maxWidth="xl" position="sticky" shouldHideOnScroll>
+			<NextUINavbar
+				maxWidth="xl" position="sticky" shouldHideOnScroll isBordered
+				classNames={{
+					item: [
+						"flex",
+						"relative",
+						"h-full",
+						"items-center",
+						"data-[active=true]:after:content-['']",
+						"data-[active=true]:after:absolute",
+						"data-[active=true]:after:bottom-0",
+						"data-[active=true]:after:left-0",
+						"data-[active=true]:after:right-0",
+						"data-[active=true]:after:h-[2px]",
+						"data-[active=true]:after:rounded-[2px]",
+						"data-[active=true]:after:bg-primary",
+					],
+				}}
+			>
 				<NavbarContent className="basis-1/5 sm:basis-full" justify="start">
 					<NavbarBrand as="li" className="gap-3 max-w-fit">
 						<NextLink className="flex justify-start items-center gap-1" href="/">
@@ -93,7 +110,6 @@ export const Navbar = () => {
 					</div>
 				</NavbarMenu>
 			</NextUINavbar>
-			<Divider className="mt-2" />
 		</>
 	);
 };

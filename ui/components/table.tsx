@@ -153,13 +153,13 @@ export default function MainTable() {
             case "name":
                 return (
                     <div className="flex flex-col">
-                        <p className="text-bold text-small capitalize">{cellValue?.toString()}</p>
-                        <p className="text-bold text-tiny capitalize text-default-400">{data.name}</p>
+                        <p className="text-bold text-small">{cellValue?.toString()}</p>
+                        <p className="text-bold text-tiny text-default-400">{data.name}</p>
                     </div>
                 );
             case "kind":
                 return (
-                    <Chip className="capitalize" color={kindColorMap[data.kind]} size="sm" variant="flat">
+                    <Chip color={kindColorMap[data.kind]} size="sm" variant="flat">
                         {cellValue?.toString()}
                     </Chip>
                 );
@@ -351,7 +351,7 @@ export default function MainTable() {
     return (
         <>
             <Card
-                className="p-4"
+                className="p-2"
             >
                 <CardHeader>
                     <h2>RBAC Table</h2>
