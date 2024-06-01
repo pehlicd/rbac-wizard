@@ -72,7 +72,7 @@ export default function WhatIfPage() {
                     </CardHeader>
                     <CardBody style={{ height: '100%', padding: 10 }}>
                         {graphData && graphData.nodes && graphData.links && (
-                            <DisjointGraph data={graphData} />
+                            <DisjointGraph data={graphData} disable={true} />
                         )}
                     </CardBody>
                 </Card>

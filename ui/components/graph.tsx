@@ -57,7 +57,7 @@ const Tooltip = ({ node, isDarkMode }: { node: Node; isDarkMode: boolean }) => (
     </div>
 );
 
-const DisjointGraph = ({ data }: { data?: { nodes: Node[], links: Link[] } }) => {
+const DisjointGraph = ({ data, disable }: { data?: { nodes: Node[], links: Link[] }, disable?: boolean }) => {
     const svgRef = useRef<SVGSVGElement | null>(null);
     const [hoveredNode, setHoveredNode] = useState<Node | null>(null);
     const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
@@ -304,25 +304,27 @@ const DisjointGraph = ({ data }: { data?: { nodes: Node[], links: Link[] } }) =>
 
     return (
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '10px' }}>
-                <Select
-                    multiple
-                    aria-label="Select bindings"
-                    placeholder="Select bindings"
-                    selectedKeys={Array.from(selectedNodes)}
-                    onSelectionChange={handleSelectionChange}
-                    selectionMode="multiple"
-                    className="max-w-xs"
-                >
-                    {allNodes.filter(node => node.kind === 'ClusterRoleBinding' || node.kind === 'RoleBinding').map(node => (
-                        <SelectItem key={node.id} value={node.id}>{node.label}</SelectItem>
-                    ))}
-                </Select>
-                <Button color="secondary" onClick={handleResetSelection}>Reset</Button>
-            </div>
-            <svg ref={svgRef} style={{ width: '100%', height: '100%' }}></svg>
+            {!disable && (
+                <div style={{display: 'flex', gap: '10px', alignItems: 'center', padding: '10px'}}>
+                    <Select
+                        multiple
+                        aria-label="Select bindings"
+                        placeholder="Select bindings"
+                        selectedKeys={Array.from(selectedNodes)}
+                        onSelectionChange={handleSelectionChange}
+                        selectionMode="multiple"
+                        className="max-w-xs"
+                    >
+                        {allNodes.filter(node => node.kind === 'ClusterRoleBinding' || node.kind === 'RoleBinding').map(node => (
+                            <SelectItem key={node.id} value={node.id}>{node.label}</SelectItem>
+                        ))}
+                    </Select>
+                    <Button color="secondary" onClick={handleResetSelection}>Reset</Button>
+                </div>
+            )}
+            <svg ref={svgRef} style={{width: '100%', height: '100%'}}></svg>
             {hoveredNode && (
-                <Tooltip node={hoveredNode} isDarkMode={isDarkMode} />
+                <Tooltip node={hoveredNode} isDarkMode={isDarkMode}/>
             )}
         </div>
     );
