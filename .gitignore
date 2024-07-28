@@ -35,6 +35,7 @@
 !.goreleaser.yml
 
 !Makefile
+!Dockerfile
 
 !assets/*
 !rbac-wizard.rb
