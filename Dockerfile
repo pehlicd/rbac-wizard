@@ -24,6 +24,8 @@ FROM alpine:3.20.2
 
 COPY --from=backend-builder /app/rbac-wizard /usr/local/bin/rbac-wizard
 
+RUN apk add libc6-compat
+
 EXPOSE 8080
 
 CMD ["rbac-wizard", "serve"]
