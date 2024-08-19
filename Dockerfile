@@ -7,7 +7,7 @@ COPY ui /app/ui
 RUN npm install
 RUN npm run build
 
-FROM golang:1.22 as backend-builder
+FROM golang:1.23 as backend-builder
 
 WORKDIR /app
 
@@ -28,4 +28,6 @@ RUN apk add libc6-compat
 
 EXPOSE 8080
 
-CMD ["rbac-wizard", "serve"]
+ENTRYPOINT ["rbac-wizard"]
+
+CMD ["serve"]
