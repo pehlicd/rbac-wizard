@@ -1,10 +1,11 @@
-FROM node:18-alpine AS frontend-builder
+FROM node:22 AS frontend-builder
 
 WORKDIR /app/ui
 
 COPY ui /app/ui
 
-RUN npm install
+RUN npm install -g npm@latest && \
+    npm install --force
 RUN npm run build
 
 FROM golang:1.23 as backend-builder
