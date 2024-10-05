@@ -25,19 +25,21 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pehlicd/rbac-wizard/internal"
-	_ "github.com/pehlicd/rbac-wizard/internal/statik"
+	"io"
+	"log"
+	"net/http"
+
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	"io"
-	"k8s.io/api/rbac/v1"
+	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	"log"
-	"net/http"
+
+	"github.com/pehlicd/rbac-wizard/internal"
+	_ "github.com/pehlicd/rbac-wizard/internal/statik"
 )
 
 // serveCmd represents the serve command
@@ -168,13 +170,6 @@ func dataHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func cacheControllers(w http.ResponseWriter) {
-	// Set cache control headers
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
-}
-
 func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	cacheControllers(w)
 
@@ -261,4 +256,11 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to write response data", http.StatusInternalServerError)
 		return
 	}
+}
+
+func cacheControllers(w http.ResponseWriter) {
+	// Set cache control headers
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 }
