@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/rakyll/statik/fs"
@@ -39,6 +38,7 @@ import (
 	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/pehlicd/rbac-wizard/internal"
+	"github.com/pehlicd/rbac-wizard/internal/logger"
 	_ "github.com/pehlicd/rbac-wizard/internal/statik"
 )
 
@@ -49,28 +49,82 @@ var serveCmd = &cobra.Command{
 	Long:  `Start the server for the rbac-wizard. This will start the server on the specified port and serve the frontend.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		port, _ := cmd.Flags().GetString("port")
-		serve(port)
+		enableLogging, _ := cmd.Flags().GetBool("logging")
+		logLevel, _ := cmd.Flags().GetString("log-level")
+		logFormat, _ := cmd.Flags().GetString("log-format")
+		serve(port, enableLogging, logLevel, logFormat)
 	},
 }
 
 var app internal.App
 
+type Serve struct {
+	App internal.App
+}
+
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	serveCmd.Flags().StringP("port", "p", "8080", "Port to run the server on")
+	serveCmd.Flags().BoolP("logging", "g", false, "Enable logging")
+	serveCmd.Flags().StringP("log-level", "l", "info", "Log level")
+	serveCmd.Flags().StringP("log-format", "f", "text", "Log format default is text [text, json]")
 }
 
-func serve(port string) {
+func serve(port string, logging bool, logLevel string, logFormat string) {
+	// Set up logger if logging is enabled
+	if logging {
+		l := logger.New(logLevel, logFormat)
+		app.Logger = l
+	} else {
+		l := logger.New("off", logFormat)
+		app.Logger = l
+	}
+
 	kubeClient, err := internal.GetClientset()
 	if err != nil {
-		log.Fatalf("Failed to create Kubernetes client: %v\n", err)
+		app.Logger.Fatal().Err(err).Msg("Failed to create Kubernetes client")
 	}
 
 	app.KubeClient = kubeClient
 
+	serve := Serve{
+		app,
+	}
+
 	// Set up CORS
-	c := cors.New(cors.Options{
+	c := setupCors(port)
+
+	// Set up statik filesystem
+	statikFS, err := fs.New()
+	if err != nil {
+		app.Logger.Fatal().Err(err).Msg("Failed to create statik filesystem")
+	}
+
+	mux := http.NewServeMux()
+
+	// Set up handlers
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "index.html")
+	})
+	mux.HandleFunc("/what-if", func(w http.ResponseWriter, r *http.Request) {
+		serveStaticFiles(statikFS, w, r, "what-if.html")
+	})
+	mux.HandleFunc("/api/data", serve.dataHandler)
+	mux.HandleFunc("/api/what-if", serve.whatIfHandler)
+
+	handler := c.Handler(serve.App.LoggerMiddleware(mux))
+
+	// Start the server
+	startupMessage := fmt.Sprintf("Starting rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
+	fmt.Println(startupMessage)
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		fmt.Printf("Failed to start server: %v\n", err)
+	}
+}
+
+func setupCors(port string) *cors.Cors {
+	return cors.New(cors.Options{
 		AllowOriginVaryRequestFunc: func(r *http.Request, origin string) (bool, []string) {
 			// Implement your dynamic origin check here
 			host := r.Host // Extract the host from the request
@@ -86,33 +140,33 @@ func serve(port string) {
 		AllowedHeaders:   []string{"Accept", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	})
-
-	// Set up statik filesystem
-	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Set up handlers
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		serveStaticFiles(statikFS, w, r, "index.html")
-	})
-	http.HandleFunc("/what-if", func(w http.ResponseWriter, r *http.Request) {
-		serveStaticFiles(statikFS, w, r, "what-if.html")
-	})
-	http.HandleFunc("/api/data", dataHandler)
-	http.HandleFunc("/api/what-if", whatIfHandler)
-
-	handler := c.Handler(http.DefaultServeMux)
-
-	// Start the server
-	startupMessage := fmt.Sprintf("Starting rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
-	fmt.Println(startupMessage)
-	if err := http.ListenAndServe(":"+port, handler); err != nil {
-		log.Fatalf("Failed to start server: %v\n", err)
-	}
 }
 
+// func (s *Serve) loggerMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		start := time.Now()
+// 		level := zerolog.InfoLevel
+// 		// status, err := strconv.Atoi(r.Response.Status)
+// 		// if err != nil {
+// 		// 	level = zerolog.ErrorLevel
+// 		// }
+// 		// if status >= 500 {
+// 		// 	level = zerolog.ErrorLevel
+// 		// } else if status >= 400 && status < 500 {
+// 		// 	level = zerolog.WarnLevel
+// 		// }
+
+// 		s.App.Logger.WithLevel(level).
+// 			Str("method", r.Method).
+// 			Str("path", r.URL.Path).
+// 			// Int("status", status).
+// 			Str("remote_addr", r.RemoteAddr).
+// 			Dur("duration", time.Since(start)).
+// 			Msg("Request processed")
+
+//			next.ServeHTTP(w, r)
+//		})
+//	}
 func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
 	// Set cache control headers
 	cacheControllers(w)
@@ -143,13 +197,14 @@ func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.R
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
-func dataHandler(w http.ResponseWriter, _ *http.Request) {
+func (s *Serve) dataHandler(w http.ResponseWriter, _ *http.Request) {
 	// Set cache control headers
 	cacheControllers(w)
 
 	// Get the bindings
 	bindings, err := internal.Generator(app).GetBindings()
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to get bindings")
 		http.Error(w, "Failed to get bindings", http.StatusInternalServerError)
 		return
 	}
@@ -157,6 +212,7 @@ func dataHandler(w http.ResponseWriter, _ *http.Request) {
 	data := internal.GenerateData(bindings)
 	byteData, err := json.Marshal(data)
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to marshal data")
 		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
 		return
 	}
@@ -165,21 +221,24 @@ func dataHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(byteData)
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to write data")
 		http.Error(w, "Failed to write data", http.StatusInternalServerError)
 		return
 	}
 }
 
-func whatIfHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Serve) whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	cacheControllers(w)
 
 	if r.Method != http.MethodPost {
+		s.App.Logger.Error().Msg("Invalid request method")
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to read request body")
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
 	}
@@ -189,12 +248,14 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.Unmarshal(body, &input); err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to parse JSON")
 		http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
 		return
 	}
 
 	var obj interface{}
 	if err := yaml.Unmarshal([]byte(input.Yaml), &obj); err != nil {
+		s.App.Logger.Error().Err(err).Msg("Invalid YAML format")
 		http.Error(w, "Invalid YAML format", http.StatusBadRequest)
 		return
 	}
@@ -205,6 +266,7 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if obj == nil {
+		s.App.Logger.Error().Msg("Empty object")
 		http.Error(w, "Empty object", http.StatusBadRequest)
 		return
 	}
@@ -213,8 +275,8 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	uObj := &unstructured.Unstructured{}
 	_, _, err = decode.Decode([]byte(input.Yaml), nil, uObj)
 	if err != nil {
-		http.Error(w, "Failed to parse ClusterRoleBinding", http.StatusBadRequest)
-		fmt.Printf("Failed to parse ClusterRoleBinding: %v\n", err)
+		s.App.Logger.Error().Err(err).Msg("Failed to parse object")
+		http.Error(w, "Failed to parse object", http.StatusBadRequest)
 		return
 	}
 
@@ -223,8 +285,8 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 		crb := &v1.ClusterRoleBinding{}
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), crb)
 		if err != nil {
+			s.App.Logger.Error().Err(err).Msg("Failed to convert to ClusterRoleBinding")
 			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
-			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
 			return
 		}
 
@@ -233,19 +295,20 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 		rb := &v1.RoleBinding{}
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), rb)
 		if err != nil {
+			s.App.Logger.Error().Err(err).Msg("Failed to convert to RoleBinding")
 			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
-			fmt.Printf("Failed to convert to ClusterRoleBinding: %v\n", err)
 			return
 		}
 		responseData = internal.WhatIfGenerator(app).ProcessRoleBinding(rb)
 	default:
+		s.App.Logger.Error().Msg("Unsupported resource type")
 		http.Error(w, "Unsupported resource type", http.StatusBadRequest)
-		fmt.Println("Unsupported resource type ", obj, " of type ", fmt.Sprintf("%T", obj))
 		return
 	}
 
 	respData, err := json.Marshal(responseData)
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to marshal response data")
 		http.Error(w, "Failed to marshal response data", http.StatusInternalServerError)
 		return
 	}
@@ -253,6 +316,7 @@ func whatIfHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(respData)
 	if err != nil {
+		s.App.Logger.Error().Err(err).Msg("Failed to write response data")
 		http.Error(w, "Failed to write response data", http.StatusInternalServerError)
 		return
 	}
