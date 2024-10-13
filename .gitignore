@@ -40,6 +40,8 @@
 !assets/*
 !rbac-wizard.rb
 
+!dev/*
+
 # ...even if they are in subdirectories
 !*/
 

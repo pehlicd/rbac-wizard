@@ -25,11 +25,19 @@ package internal
 import (
 	"context"
 	"fmt"
+
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes/scheme"
+)
+
+const (
+	ClusterRoleBindingKind       = "ClusterRoleBinding"
+	RoleBindingKind              = "RoleBinding"
+	ClusterRoleBindingAPIVersion = "rbac.authorization.k8s.io/v1"
+	RoleBindingAPIVersion        = "rbac.authorization.k8s.io/v1"
 )
 
 func (app App) GetBindings() (*Bindings, error) {
@@ -55,39 +63,52 @@ func (app App) GetBindings() (*Bindings, error) {
 
 func GenerateData(bindings *Bindings) []Data {
 	var data []Data
+	var i int
 
-	for i, crb := range bindings.ClusterRoleBindings.Items {
+	for _, crb := range bindings.ClusterRoleBindings.Items {
+		crb.ManagedFields = nil
+
 		data = append(data, Data{
 			Name:     crb.Name,
 			Id:       i,
-			Kind:     "ClusterRoleBinding",
+			Kind:     ClusterRoleBindingKind,
 			Subjects: crb.Subjects,
 			RoleRef:  crb.RoleRef,
-			Raw:      yamlParser(&crb),
+			Raw:      yamlParser(&crb, ClusterRoleBindingKind, ClusterRoleBindingAPIVersion),
 		})
+		i++
 	}
 
-	for i, rb := range bindings.RoleBindings.Items {
+	for _, rb := range bindings.RoleBindings.Items {
+		rb.ManagedFields = nil
 		data = append(data, Data{
 			Name:     rb.Name,
 			Id:       i,
-			Kind:     "RoleBinding",
+			Kind:     RoleBindingKind,
 			Subjects: rb.Subjects,
 			RoleRef:  rb.RoleRef,
-			Raw:      yamlParser(&rb),
+			Raw:      yamlParser(&rb, RoleBindingKind, RoleBindingAPIVersion),
 		})
+		i++
 	}
 
 	return data
 }
 
-func yamlParser(obj runtime.Object) string {
+func yamlParser(obj runtime.Object, kind string, apiVersion string) string {
 	// Convert the object to YAML
 	s := json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme, json.SerializerOptions{Yaml: true, Pretty: true})
 	o, err := runtime.Encode(s, obj)
 	if err != nil {
 		return ""
 	}
+
+	if len(o) == 0 {
+		return "Could not parse the object"
+	}
+
+	// Prepend the kind and apiVersion to the YAML
+	o = []byte(fmt.Sprintf("kind: %s\napiVersion: %s\n%s", kind, apiVersion, o))
 
 	// Unmarshal the JSON into a generic map
 	var yamlObj map[string]interface{}

@@ -23,12 +23,14 @@ THE SOFTWARE.
 package internal
 
 import (
+	"github.com/rs/zerolog"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 type App struct {
 	KubeClient *kubernetes.Clientset
+	Logger     *zerolog.Logger
 }
 
 type Generator interface {

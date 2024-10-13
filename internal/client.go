@@ -24,12 +24,13 @@ package internal
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"os"
-	"path/filepath"
 )
 
 // GetClientset Creates a new clientset for the kubernetes

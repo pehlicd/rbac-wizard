@@ -1,3 +1,4 @@
+"use client";
 import {
 	Navbar as NextUINavbar,
 	NavbarContent,
@@ -21,10 +22,14 @@ import {
 	Logo,
 } from "@/components/icons";
 
-export const Navbar = () => {
+import React from "react";
+
+export function Navbar() {
+	const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 	return (
 		<>
 			<NextUINavbar
+				isMenuOpen={isMenuOpen} onMenuOpenChange={setIsMenuOpen}
 				maxWidth="xl" position="sticky" shouldHideOnScroll isBordered
 				classNames={{
 					item: [
@@ -60,6 +65,7 @@ export const Navbar = () => {
 									)}
 									color="foreground"
 									href={item.href}
+									onClick={() => setIsMenuOpen(false)}
 								>
 									{item.label}
 								</NextLink>
@@ -85,7 +91,10 @@ export const Navbar = () => {
 						<GithubIcon className="text-default-500" />
 					</Link>
 					<ThemeSwitch />
-					<NavbarMenuToggle />
+					<NavbarMenuToggle 
+						className="text-default-500" 
+						aria-label="Menu"
+					/>
 				</NavbarContent>
 
 				<NavbarMenu>
@@ -100,8 +109,10 @@ export const Navbar = () => {
 											? "danger"
 											: "foreground"
 									}
-									href="#"
+									href={item.href}
 									size="lg"
+									onClick={() => setIsMenuOpen(false)}
+									onPress={() => setIsMenuOpen(false)}
 								>
 									{item.label}
 								</Link>
