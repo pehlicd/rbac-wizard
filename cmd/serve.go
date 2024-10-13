@@ -92,15 +92,16 @@ func serve(port string, logging bool, logLevel string, logFormat string) {
 		app,
 	}
 
-	// Set up CORS
-	c := setupCors(port)
-
 	// Set up statik filesystem
 	statikFS, err := fs.New()
 	if err != nil {
 		app.Logger.Fatal().Err(err).Msg("Failed to create statik filesystem")
 	}
 
+	// Set up CORS
+	c := setupCors(port)
+
+	// Create a new serve mux
 	mux := http.NewServeMux()
 
 	// Set up handlers
@@ -142,31 +143,6 @@ func setupCors(port string) *cors.Cors {
 	})
 }
 
-// func (s *Serve) loggerMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		start := time.Now()
-// 		level := zerolog.InfoLevel
-// 		// status, err := strconv.Atoi(r.Response.Status)
-// 		// if err != nil {
-// 		// 	level = zerolog.ErrorLevel
-// 		// }
-// 		// if status >= 500 {
-// 		// 	level = zerolog.ErrorLevel
-// 		// } else if status >= 400 && status < 500 {
-// 		// 	level = zerolog.WarnLevel
-// 		// }
-
-// 		s.App.Logger.WithLevel(level).
-// 			Str("method", r.Method).
-// 			Str("path", r.URL.Path).
-// 			// Int("status", status).
-// 			Str("remote_addr", r.RemoteAddr).
-// 			Dur("duration", time.Since(start)).
-// 			Msg("Request processed")
-
-//			next.ServeHTTP(w, r)
-//		})
-//	}
 func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
 	// Set cache control headers
 	cacheControllers(w)
