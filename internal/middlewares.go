@@ -34,8 +34,9 @@ func (l App) LoggerMiddleware(next http.Handler) http.Handler {
 }
 
 type responseWriter struct {
-	w      http.ResponseWriter
-	status int
+	w           http.ResponseWriter
+	status      int
+	wroteHeader bool
 }
 
 func (rw *responseWriter) Header() http.Header {
@@ -43,13 +44,16 @@ func (rw *responseWriter) Header() http.Header {
 }
 
 func (rw *responseWriter) Write(b []byte) (int, error) {
-	if rw.status == 0 {
-		rw.status = http.StatusOK
+	if !rw.wroteHeader {
+		rw.WriteHeader(http.StatusOK)
 	}
 	return rw.w.Write(b)
 }
 
 func (rw *responseWriter) WriteHeader(statusCode int) {
-	rw.status = statusCode
-	rw.w.WriteHeader(statusCode)
+	if !rw.wroteHeader {
+		rw.status = statusCode
+		rw.w.WriteHeader(statusCode)
+		rw.wroteHeader = true
+	}
 }
