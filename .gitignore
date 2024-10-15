@@ -18,6 +18,7 @@
 !ui/public/*
 !ui/styles/*
 !ui/types/*
+!ui/.babelrc
 !ui/.eslintrc.json
 !ui/.npmrc
 !ui/LICENSE
