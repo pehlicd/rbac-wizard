@@ -5,7 +5,8 @@ WORKDIR /app/ui
 COPY ui /app/ui
 
 RUN npm install -g npm@latest && \
-    npm install --force
+    npm install -D @swc/cli @swc/core && \
+    npm install --force --legacy-peer-deps
 RUN npm run build
 
 FROM golang:1.23 as backend-builder
