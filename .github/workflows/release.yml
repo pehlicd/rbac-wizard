@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.rbac-wizard.outputs.tags }}
           labels: ${{ steps.rbac-wizard.outputs.labels }}

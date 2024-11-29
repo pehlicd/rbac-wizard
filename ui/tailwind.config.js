@@ -1,6 +1,6 @@
-import {nextui} from '@nextui-org/theme'
+import { nextui } from '@nextui-org/theme'
+import { Config } from 'tailwindcss'
 
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './components/**/*.{js,ts,jsx,tsx,mdx}',
