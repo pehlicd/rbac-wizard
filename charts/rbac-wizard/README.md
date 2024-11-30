@@ -1,6 +1,6 @@
 # rbac-wizard
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=plastic) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=plastic) ![AppVersion: 0.0.6](https://img.shields.io/badge/AppVersion-0.0.6-informational?style=plastic)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.6](https://img.shields.io/badge/AppVersion-0.0.6-informational?style=flat-square)
 
 A Helm chart for deploying RBAC Wizard to the Kubernetes
 
