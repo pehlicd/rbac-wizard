@@ -2,8 +2,8 @@ class RbacWizard < Formula
   desc "RBAC Wizard is a tool that helps you visualize and analyze the RBAC configurations of your Kubernetes cluster. It provides a graphical representation of the Kubernetes RBAC objects."
   homepage "https://github.com/pehlicd/rbac-wizard"
   url "https://github.com/pehlicd/rbac-wizard.git",
-      tag:      "v0.0.5",
-      revision: "83edd789bda677231bd55eec319ac32ce6aacf68"
+      tag:      "v0.0.6",
+      revision: "2aacf572eb466586d4dee921eedb5c61adfe86f5"
   license "MIT"
   head "https://github.com/pehlicd/rbac-wizard.git", branch: "main"
 

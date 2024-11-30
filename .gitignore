@@ -28,6 +28,8 @@
 !ui/tailwind.config.js
 !ui/tsconfig.json
 
+!charts/**
+
 !.github/*
 !.github/workflows/*
 !.github/ISSUE_TEMPLATE/*
