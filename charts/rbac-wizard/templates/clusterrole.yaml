@@ -1,0 +1,24 @@
+{{- if .Values.clusterRole.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "rbac-wizard.clusterRoleName" . }}
+  labels:
+    {{- include "rbac-wizard.labels" . | nindent 4 }}
+  {{- with .Values.clusterRole.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+rules:
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: 
+      - roles
+      - rolebindings
+      - clusterroles
+      - clusterrolebindings
+    verbs: ["list", "get", "watch"]
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts
+    verbs: ["list", "get", "watch"]
+{{- end }}
