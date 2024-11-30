@@ -1,6 +1,6 @@
 apiVersion: v2
 name: rbac-wizard
-home: https://github.com/pehlicd/rbac-wizard
+home: https://rbac-wizard.pehli.dev
 description: A Helm chart for deploying RBAC Wizard to the Kubernetes
 maintainers:
   - name: pehlicd
