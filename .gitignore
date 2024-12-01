@@ -30,6 +30,7 @@
 
 !charts/**
 !index.yaml
+!*.tgz
 
 !.github/*
 !.github/workflows/*
@@ -47,4 +48,3 @@
 
 # ...even if they are in subdirectories
 !*/
-
