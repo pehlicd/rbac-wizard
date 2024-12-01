@@ -1,0 +1,19 @@
+apiVersion: v1
+entries:
+  rbac-wizard:
+  - apiVersion: v2
+    appVersion: 0.0.6
+    created: "2024-12-01T11:49:08.957528365Z"
+    description: A Helm chart for deploying RBAC Wizard to the Kubernetes
+    digest: 849f5c078d585f82ec2a924e220fef9e2dee2c86c92aab6efa02c9a004e6541d
+    home: https://rbac-wizard.pehli.dev
+    maintainers:
+    - email: furkanpehlivan34@gmail.com
+      name: pehlicd
+      url: https://github.com/pehlicd
+    name: rbac-wizard
+    type: application
+    urls:
+    - rbac-wizard-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-12-01T11:49:08.957547461Z"
