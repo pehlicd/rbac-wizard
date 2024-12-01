@@ -29,6 +29,7 @@
 !ui/tsconfig.json
 
 !charts/**
+!index.yaml
 
 !.github/*
 !.github/workflows/*
