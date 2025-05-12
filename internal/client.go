@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+Modified by Alessio Greggi © 2025. Based on work by Furkan Pehlivan <furkanpehlivan34@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +23,13 @@ THE SOFTWARE.
 package internal
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/rancher/norman/pkg/kwrapper/k8s"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -34,7 +37,7 @@ import (
 )
 
 // GetClientset Creates a new clientset for the kubernetes
-func GetClientset() (*kubernetes.Clientset, error) {
+func GetClientset() (*kubernetes.Clientset, *dynamic.DynamicClient, error) {
 	var config *rest.Config
 
 	// First try to use the in-cluster configuration
@@ -48,17 +51,23 @@ func GetClientset() (*kubernetes.Clientset, error) {
 			kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 		}
 
+		k8s.GetConfig(context.Background(), "auto", kubeconfig)
+
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build config from kubeconfig path %s: %v", kubeconfig, err)
+			return nil, nil, fmt.Errorf("failed to build config from kubeconfig path %s: %v", kubeconfig, err)
 		}
 	}
 
 	// Create and store the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create clientset: %v", err)
+		return nil, nil, fmt.Errorf("failed to create clientset: %v", err)
+	}
+	dynamicclient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create clientset: %v", err)
 	}
 
-	return clientset, nil
+	return clientset, dynamicclient, nil
 }

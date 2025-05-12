@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+Modified by Alessio Greggi © 2025. Based on work by Furkan Pehlivan <furkanpehlivan34@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
 package cmd
 
 import (
@@ -30,9 +29,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "rbac-wizard",
-	Short: "RBAC Wizard is a tool to visualize Kubernetes RBAC resources.",
-	Long:  `RBAC Wizard is a tool to visualize Kubernetes RBAC resources. It can be used to view and check the permissions relationships between RBAC objects.`,
+	Use:   "rancher-rbac-wizard",
+	Short: "Rancher RBAC Wizard is a tool to visualize Rancher Kubernetes RBAC resources.",
+	Long:  `Rancher RBAC Wizard is a tool to visualize Rancher Kubernetes RBAC resources. It can be used to view and check the permissions relationships between RBAC objects.`,
 }
 
 func Execute() {

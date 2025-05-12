@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+Modified by Alessio Greggi © 2025. Based on work by Furkan Pehlivan <furkanpehlivan34@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import (
 	"net/http"
 
 	"github.com/rakyll/statik/fs"
+	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -37,9 +38,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	"github.com/pehlicd/rbac-wizard/internal"
-	"github.com/pehlicd/rbac-wizard/internal/logger"
-	_ "github.com/pehlicd/rbac-wizard/internal/statik"
+	"github.com/alegrey91/rancher-rbac-wizard/internal"
+	"github.com/alegrey91/rancher-rbac-wizard/internal/logger"
+	_ "github.com/alegrey91/rancher-rbac-wizard/internal/statik"
 )
 
 // serveCmd represents the serve command
@@ -81,12 +82,13 @@ func serve(port string, logging bool, logLevel string, logFormat string) {
 		app.Logger = l
 	}
 
-	kubeClient, err := internal.GetClientset()
+	kubeClient, dynamicClient, err := internal.GetClientset()
 	if err != nil {
 		app.Logger.Fatal().Err(err).Msg("Failed to create Kubernetes client")
 	}
 
 	app.KubeClient = kubeClient
+	app.DynamicClient = dynamicClient
 
 	serve := Serve{
 		app,
@@ -272,10 +274,37 @@ func (s *Serve) whatIfHandler(w http.ResponseWriter, r *http.Request) {
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), rb)
 		if err != nil {
 			s.App.Logger.Error().Err(err).Msg("Failed to convert to RoleBinding")
-			http.Error(w, "Failed to convert to ClusterRoleBinding", http.StatusBadRequest)
+			http.Error(w, "Failed to convert to RoleBinding", http.StatusBadRequest)
 			return
 		}
 		responseData = internal.WhatIfGenerator(app).ProcessRoleBinding(rb)
+	case "ProjectRoleTemplateBinding":
+		prtb := &v3.ProjectRoleTemplateBinding{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), prtb)
+		if err != nil {
+			s.App.Logger.Error().Err(err).Msg("Failed to convert to ProjectRoleTemplateBinding")
+			http.Error(w, "Failed to convert to ProjectRoleTemplateBinding", http.StatusBadRequest)
+			return
+		}
+		responseData = internal.WhatIfGenerator(app).ProcessProjectRoleTemplateBinding(prtb)
+	case "ClusterRoleTemplateBinding":
+		crtb := &v3.ClusterRoleTemplateBinding{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), crtb)
+		if err != nil {
+			s.App.Logger.Error().Err(err).Msg("Failed to convert to ClusterRoleTemplateBinding")
+			http.Error(w, "Failed to convert to ClusterRoleTemplateBinding", http.StatusBadRequest)
+			return
+		}
+		responseData = internal.WhatIfGenerator(app).ProcessClusterRoleTemplateBinding(crtb)
+	case "GlobalRoleBinding":
+		grb := &v3.GlobalRoleBinding{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uObj.UnstructuredContent(), grb)
+		if err != nil {
+			s.App.Logger.Error().Err(err).Msg("Failed to convert to GlobalRoleBinding")
+			http.Error(w, "Failed to convert to GlobalRoleBinding", http.StatusBadRequest)
+			return
+		}
+		responseData = internal.WhatIfGenerator(app).ProcessGlobalRoleBinding(grb)
 	default:
 		s.App.Logger.Error().Msg("Unsupported resource type")
 		http.Error(w, "Unsupported resource type", http.StatusBadRequest)

@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+Modified by Alessio Greggi © 2025. Based on work by Furkan Pehlivan <furkanpehlivan34@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "github.com/pehlicd/rbac-wizard/cmd"
+import "github.com/alegrey91/rancher-rbac-wizard/cmd"
 
 func main() {
 	cmd.Execute()

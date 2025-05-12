@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 Furkan Pehlivan <furkanpehlivan34@gmail.com>
+Modified by Alessio Greggi © 2025. Based on work by Furkan Pehlivan <furkanpehlivan34@gmail.com>.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 
+	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -113,6 +114,135 @@ func (app App) ProcessRoleBinding(rb *v1.RoleBinding) (data struct {
 	return data
 }
 
+func (app App) ProcessProjectRoleTemplateBinding(prtb *v3.ProjectRoleTemplateBinding) (data struct {
+	Nodes []Node `json:"nodes"`
+	Links []Link `json:"links"`
+}) {
+	rbNodeID := prtb.Kind + "-" + prtb.Name
+	data.Nodes = append(data.Nodes, Node{
+		ID:       rbNodeID,
+		Kind:     prtb.Kind,
+		ApiGroup: prtb.APIVersion,
+		Label:    rbNodeID,
+	})
+
+	user := v1.Subject{
+		APIGroup: "management.cattle.io",
+		Kind:     "User",
+		Name:     prtb.UserName,
+	}
+	subjectInfo := fetchSubjectDetails(app.KubeClient, user)
+	if subjectInfo != nil {
+		data.Nodes = append(data.Nodes, *subjectInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: subjectInfo.ID,
+		})
+	}
+
+	role := v1.RoleRef{
+		APIGroup: "management.cattle.io",
+		Kind:     "RoleTemplate",
+		Name:     prtb.RoleTemplateName,
+	}
+	roleRefInfo := fetchRoleRefDetails(app.KubeClient, role)
+	if roleRefInfo != nil {
+		data.Nodes = append(data.Nodes, *roleRefInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: roleRefInfo.ID,
+		})
+	}
+
+	return data
+}
+
+func (app App) ProcessClusterRoleTemplateBinding(crtb *v3.ClusterRoleTemplateBinding) (data struct {
+	Nodes []Node `json:"nodes"`
+	Links []Link `json:"links"`
+}) {
+	rbNodeID := crtb.Kind + "-" + crtb.Name
+	data.Nodes = append(data.Nodes, Node{
+		ID:       rbNodeID,
+		Kind:     crtb.Kind,
+		ApiGroup: crtb.APIVersion,
+		Label:    rbNodeID,
+	})
+
+	user := v1.Subject{
+		APIGroup: "management.cattle.io",
+		Kind:     "User",
+		Name:     crtb.UserName,
+	}
+	subjectInfo := fetchSubjectDetails(app.KubeClient, user)
+	if subjectInfo != nil {
+		data.Nodes = append(data.Nodes, *subjectInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: subjectInfo.ID,
+		})
+	}
+
+	role := v1.RoleRef{
+		APIGroup: "management.cattle.io",
+		Kind:     "RoleTemplate",
+		Name:     crtb.RoleTemplateName,
+	}
+	roleRefInfo := fetchRoleRefDetails(app.KubeClient, role)
+	if roleRefInfo != nil {
+		data.Nodes = append(data.Nodes, *roleRefInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: roleRefInfo.ID,
+		})
+	}
+
+	return data
+}
+
+func (app App) ProcessGlobalRoleBinding(grb *v3.GlobalRoleBinding) (data struct {
+	Nodes []Node `json:"nodes"`
+	Links []Link `json:"links"`
+}) {
+	rbNodeID := grb.Kind + "-" + grb.Name
+	data.Nodes = append(data.Nodes, Node{
+		ID:       rbNodeID,
+		Kind:     grb.Kind,
+		ApiGroup: grb.APIVersion,
+		Label:    rbNodeID,
+	})
+
+	user := v1.Subject{
+		APIGroup: "management.cattle.io",
+		Kind:     "User",
+		Name:     grb.UserName,
+	}
+	subjectInfo := fetchSubjectDetails(app.KubeClient, user)
+	if subjectInfo != nil {
+		data.Nodes = append(data.Nodes, *subjectInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: subjectInfo.ID,
+		})
+	}
+
+	role := v1.RoleRef{
+		APIGroup: "management.cattle.io",
+		Kind:     "GlobalRole",
+		Name:     grb.GlobalRoleName,
+	}
+	roleRefInfo := fetchRoleRefDetails(app.KubeClient, role)
+	if roleRefInfo != nil {
+		data.Nodes = append(data.Nodes, *roleRefInfo)
+		data.Links = append(data.Links, Link{
+			Source: rbNodeID,
+			Target: roleRefInfo.ID,
+		})
+	}
+
+	return data
+}
+
 func fetchSubjectDetails(client *kubernetes.Clientset, subject v1.Subject) *Node {
 	if subject.Kind == "ServiceAccount" {
 		_, err := client.CoreV1().ServiceAccounts(subject.Namespace).Get(context.TODO(), subject.Name, metav1.GetOptions{})
@@ -143,6 +273,20 @@ func fetchRoleRefDetails(client *kubernetes.Clientset, roleRef v1.RoleRef) *Node
 			Label:    roleRef.Kind + "-" + roleRef.Name,
 		}
 	case "Role":
+		return &Node{
+			ID:       roleRef.Kind + "-" + roleRef.Name,
+			Kind:     roleRef.Kind,
+			ApiGroup: roleRef.APIGroup,
+			Label:    roleRef.Kind + "-" + roleRef.Name,
+		}
+	case "GlobalRole":
+		return &Node{
+			ID:       roleRef.Kind + "-" + roleRef.Name,
+			Kind:     roleRef.Kind,
+			ApiGroup: roleRef.APIGroup,
+			Label:    roleRef.Kind + "-" + roleRef.Name,
+		}
+	case "RoleTemplate":
 		return &Node{
 			ID:       roleRef.Kind + "-" + roleRef.Name,
 			Kind:     roleRef.Kind,
