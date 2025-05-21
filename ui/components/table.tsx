@@ -18,10 +18,10 @@ import {
     Selection,
     ChipProps,
     SortDescriptor
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { SearchIcon, VerticalDotsIcon, ChevronDownIcon, RefreshIcon, CopyIcon } from "@/components/icons";
-import { Modal, ModalBody, ModalContent } from "@nextui-org/modal";
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
+import { Modal, ModalBody, ModalContent } from "@heroui/modal";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import axios from "axios";
 import { toast } from "react-toastify";
 
