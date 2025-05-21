@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { useTheme } from 'next-themes';
 import debounce from 'lodash.debounce';
 import axios from "axios";
-import { Select, SelectItem, Button } from '@nextui-org/react';
+import { Select, SelectItem, Button } from "@heroui/react";
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;

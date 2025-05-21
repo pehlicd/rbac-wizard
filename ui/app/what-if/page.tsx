@@ -1,13 +1,13 @@
 "use client";
 import Editor from '@monaco-editor/react';
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Badge, Button } from "@nextui-org/react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Badge, Button } from "@heroui/react";
 import { useTheme } from 'next-themes';
 import { useState } from 'react';
 import axios from 'axios';
 import DisjointGraph from '@/components/graph';
 import { IoInformationCircle } from "react-icons/io5";
-import {Tooltip} from "@nextui-org/tooltip";
+import {Tooltip} from "@heroui/tooltip";
 
 export default function WhatIfPage() {
     const { theme } = useTheme();

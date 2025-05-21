@@ -7,10 +7,10 @@ import {
 	NavbarBrand,
 	NavbarItem,
 	NavbarMenuItem,
-} from "@nextui-org/navbar";
-import { Link } from "@nextui-org/link";
+} from "@heroui/navbar";
+import { Link } from "@heroui/link";
 
-import { link as linkStyles } from "@nextui-org/theme";
+import { link as linkStyles } from "@heroui/theme";
 
 import { siteConfig } from "@/config/site";
 import NextLink from "next/link";

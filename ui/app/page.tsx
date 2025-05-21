@@ -1,5 +1,5 @@
 import MainTable from "@/components/table";
-import {Card, CardBody, CardHeader} from "@nextui-org/card";
+import {Card, CardBody, CardHeader} from "@heroui/card";
 import DisjointGraph from "@/components/graph";
 
 export default function Home() {
