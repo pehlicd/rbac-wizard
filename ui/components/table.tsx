@@ -187,12 +187,14 @@ export default function MainTable() {
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Details options">
-                                <DropdownItem onClick={
-                                    () => {
-                                        setModalData(data); // Set the binding data to the modalData state
-                                        setIsModalOpen(true); // Open the modal
-                                    }
-                                }>View</DropdownItem>
+                                <DropdownItem 
+                                    key="view"
+                                    onClick={
+                                        () => {
+                                            setModalData(data); // Set the binding data to the modalData state
+                                            setIsModalOpen(true); // Open the modal
+                                        }
+                                    }>View</DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
                     </div>

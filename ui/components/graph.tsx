@@ -316,7 +316,7 @@ const DisjointGraph = ({ data, disable }: { data?: { nodes: Node[], links: Link[
                         className="max-w-xs"
                     >
                         {allNodes.filter(node => node.kind === 'ClusterRoleBinding' || node.kind === 'RoleBinding').map(node => (
-                            <SelectItem key={node.id} value={node.id}>{node.label}</SelectItem>
+                            <SelectItem key={node.id}>{node.label}</SelectItem>
                         ))}
                     </Select>
                     <Button color="secondary" onClick={handleResetSelection}>Reset</Button>
