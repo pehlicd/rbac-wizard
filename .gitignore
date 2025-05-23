@@ -48,3 +48,5 @@
 
 # ...even if they are in subdirectories
 !*/
+
+ui/node_modules/*

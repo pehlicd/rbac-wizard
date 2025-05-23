@@ -28,6 +28,13 @@ Rancher RBAC Wizard is a tool that helps you visualize and analyze the RBAC conf
 go install github.com/alegrey91/rancher-rbac-wizard@latest
 ```
 
+## How to install
+
+```bash
+make build-ui
+make build-backend
+```
+
 ## How to use
 
 Using Rancher RBAC Wizard is super simple. Just run the following command:

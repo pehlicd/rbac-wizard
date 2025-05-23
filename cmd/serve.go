@@ -26,9 +26,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 
-	"github.com/rakyll/statik/fs"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
@@ -38,9 +38,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kyaml "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	"github.com/alegrey91/rancher-rbac-wizard/internal"
+	embedfiles "github.com/alegrey91/rancher-rbac-wizard/internal/embed"
 	"github.com/alegrey91/rancher-rbac-wizard/internal/logger"
-	_ "github.com/alegrey91/rancher-rbac-wizard/internal/statik"
+	internal "github.com/alegrey91/rancher-rbac-wizard/internal/rrw"
 )
 
 // serveCmd represents the serve command
@@ -87,17 +87,23 @@ func serve(port string, logging bool, logLevel string, logFormat string) {
 		app.Logger.Fatal().Err(err).Msg("Failed to create Kubernetes client")
 	}
 
+	// Set up clients
 	app.KubeClient = kubeClient
 	app.DynamicClient = dynamicClient
-
 	serve := Serve{
 		app,
 	}
 
-	// Set up statik filesystem
-	statikFS, err := fs.New()
+	// define subtree directory
+	uiFS, err := fs.Sub(embedfiles.UIfs, "dist")
 	if err != nil {
-		app.Logger.Fatal().Err(err).Msg("Failed to create statik filesystem")
+		app.Logger.Fatal().Err(err).Msg("Failed to find subtree in embedded directory")
+	}
+
+	// Set up embedded filesystem
+	uiFiles := http.FS(uiFS)
+	if err != nil {
+		app.Logger.Fatal().Err(err).Msg("Failed to create embed filesystem")
 	}
 
 	// Set up CORS
@@ -108,10 +114,10 @@ func serve(port string, logging bool, logLevel string, logFormat string) {
 
 	// Set up handlers
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		serveStaticFiles(statikFS, w, r, "index.html")
+		serveStaticFiles(uiFiles, w, r, "index.html")
 	})
 	mux.HandleFunc("/what-if", func(w http.ResponseWriter, r *http.Request) {
-		serveStaticFiles(statikFS, w, r, "what-if.html")
+		serveStaticFiles(uiFiles, w, r, "what-if.html")
 	})
 	mux.HandleFunc("/api/data", serve.dataHandler)
 	mux.HandleFunc("/api/what-if", serve.whatIfHandler)
@@ -119,10 +125,10 @@ func serve(port string, logging bool, logLevel string, logFormat string) {
 	handler := c.Handler(serve.App.LoggerMiddleware(mux))
 
 	// Start the server
-	startupMessage := fmt.Sprintf("Starting rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
+	startupMessage := fmt.Sprintf("Starting rancher-rbac-wizard on %s", fmt.Sprintf("http://localhost:%s", port))
 	fmt.Println(startupMessage)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
+		app.Logger.Fatal().Err(err).Msg("Failed to create embed filesystem")
 	}
 }
 
@@ -145,7 +151,7 @@ func setupCors(port string) *cors.Cors {
 	})
 }
 
-func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
+func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.Request, defaultFile string) {
 	// Set cache control headers
 	cacheControllers(w)
 
@@ -154,10 +160,10 @@ func serveStaticFiles(statikFS http.FileSystem, w http.ResponseWriter, r *http.R
 		path = "/" + defaultFile
 	}
 
-	file, err := statikFS.Open(path)
+	file, err := staticFS.Open(path)
 	if err != nil {
 		// If the file is not found, serve the default file (index.html)
-		file, err = statikFS.Open("/" + defaultFile)
+		file, err = staticFS.Open("/" + defaultFile)
 		if err != nil {
 			http.NotFound(w, r)
 			return

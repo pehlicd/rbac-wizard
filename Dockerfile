@@ -14,16 +14,13 @@ WORKDIR /app
 
 COPY . .
 
-RUN go install github.com/rakyll/statik@latest
-
 COPY --from=frontend-builder /app/ui/dist /app/ui/dist
 
-RUN statik -src=./ui/dist/ -dest=./internal/ -f
-RUN go build -o rbac-wizard
+RUN go build -o rancher-rbac-wizard
 
 FROM alpine:3.20.2
 
-COPY --from=backend-builder /app/rbac-wizard /usr/local/bin/rbac-wizard
+COPY --from=backend-builder /app/rbac-wizard /usr/local/bin/rancher-rbac-wizard
 
 RUN apk add libc6-compat
 
