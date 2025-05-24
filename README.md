@@ -18,7 +18,7 @@ Rancher RBAC Wizard is a tool that helps you visualize and analyze the RBAC conf
 
 | Demo                                       |
 |--------------------------------------------|
-| <img src="/assets/rbac-wizard-demo.gif" /> |
+| <img src="/assets/rancher-rbac-wizard.gif" /> |
 
 </div>
 
