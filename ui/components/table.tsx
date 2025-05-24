@@ -45,6 +45,9 @@ const columns = [
 const kindOptions = [
     { name: "ClusterRoleBinding", uid: "ClusterRoleBinding" },
     { name: "RoleBinding", uid: "RoleBinding" },
+    { name: "ProjectRoleTemplateBinding", uid: "projectroletemplatebindings" },
+    { name: "ClusterRoleTemplateBinding", uid: "clusterroletemplatebindings" },
+    { name: "GlobalRoleBinding", uid: "globalrolebindings" },
 ];
 
 type Subject = {

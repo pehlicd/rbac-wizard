@@ -1,6 +1,6 @@
 export const siteConfig = {
-	name: "RBAC Wizard",
-	description: "Kubernetes RBAC Wizard",
+	name: "Rancher RBAC Wizard",
+	description: "Kubernetes Rancher RBAC Wizard",
 	navItems: [
 		{
 			label: "Dashboard",
@@ -22,7 +22,7 @@ export const siteConfig = {
 		},
 	],
 	links: {
-		github: "https://github.com/pehlicd/rbac-wizard",
-		docs: "https://github.com/pehlicd/rbac-wizard",
+		github: "https://github.com/alegrey91/rancher-rbac-wizard",
+		docs: "https://github.com/alegrey91/rancher-rbac-wizard",
 	},
 };
