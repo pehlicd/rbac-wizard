@@ -162,12 +162,12 @@ const DisjointGraph = ({ data, disable }: { data?: { nodes: Node[], links: Link[
             .attr('class', 'node')
             .attr('r', 10)
             .attr('fill', 
-                d => d.kind === 'ClusterRoleBinding' ? 'red' 
-                : d.kind === 'RoleBinding' ? 'green' 
-                : d.kind === 'clusterroletemplatebindings' ? 'blue' 
-                : d.kind === 'projectroletemplatebindings' ? 'yellow' 
-                : d.kind === 'globalrolebindings' ? 'purple' 
-                : 'pink')
+                d => d.kind === 'ClusterRoleBinding' ? 'RoyalBlue' 
+                : d.kind === 'RoleBinding' ? 'MediumSeaGreen' 
+                : d.kind === 'clusterroletemplatebindings' ? 'DarkOrange' 
+                : d.kind === 'projectroletemplatebindings' ? 'SteelBlue' 
+                : d.kind === 'globalrolebindings' ? 'DarkViolet' 
+                : 'SlateGray')
             .call(drag(simulation) as any)
             .on('mouseover', debounce((_event, d) => setHoveredNode(d), 50))
             .on('mouseout', debounce(() => setHoveredNode(null), 50));
@@ -206,12 +206,12 @@ const DisjointGraph = ({ data, disable }: { data?: { nodes: Node[], links: Link[
             .attr('transform', 'translate(20,20)');
 
         const legendData = [
-            { label: 'ClusterRoleBinding', color: 'red' },
-            { label: 'RoleBinding', color: 'green' },
-            { label: 'clusterroletemplatebindings', color: 'blue' },
-            { label: 'projectroletemplatebindings', color: 'yellow' },
-            { label: 'globalrolebindings', color: 'purple' },
-            { label: 'Other', color: 'pink' }
+            { label: 'ClusterRoleBinding', color: 'RoyalBlue' },
+            { label: 'RoleBinding', color: 'MediumSeaGreen' },
+            { label: 'clusterroletemplatebindings', color: 'DarkOrange' },
+            { label: 'projectroletemplatebindings', color: 'SteelBlue' },
+            { label: 'globalrolebindings', color: 'DarkViolet' },
+            { label: 'Other', color: 'SlateGray' }
         ];
 
         const legendItem = legend.selectAll('.legend-item')
