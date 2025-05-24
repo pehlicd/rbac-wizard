@@ -1,5 +1,5 @@
 <div align="center" style="padding-top: 20px">
-    <img src="/assets/rancher-rbac-wizard.jpg?raw=true" width="220" style="background-color: blue;">
+    <img src="/assets/rancher-rbac-wizard.png?raw=true" width="220" style="background-color: blue;">
 </div>
 
 # Rancher RBAC Wizard
@@ -22,13 +22,7 @@ Rancher RBAC Wizard is a tool that helps you visualize and analyze the RBAC conf
 
 </div>
 
-## How to install
-
-```bash
-go install github.com/alegrey91/rancher-rbac-wizard@latest
-```
-
-## How to install
+## How to build
 
 ```bash
 make build-ui
