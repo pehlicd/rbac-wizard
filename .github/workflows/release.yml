@@ -46,9 +46,9 @@ jobs:
       run: |
         make build-backend
     - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ./bin/rancher-rbac-wizard
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ./bin/rancher-rbac-wizard
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
