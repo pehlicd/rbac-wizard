@@ -32,6 +32,10 @@ serve: build-backend
 	@echo "$(OK_COLOR)==> Starting the application...$(NO_COLOR)"
 	go run . serve
 
+setup-ui:
+	@echo "$(OK_COLOR)==> Setting up UI dependencies...$(NO_COLOR)"
+	cd ui && npm install --force
+
 ## Run UI in development mode
 run-ui:
 	@echo "$(OK_COLOR)==> Running UI in development mode...$(NO_COLOR)"
