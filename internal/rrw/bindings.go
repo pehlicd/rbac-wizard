@@ -88,22 +88,22 @@ func (app App) GetBindings() (*Bindings, error) {
 	crtbs := &v3.ClusterRoleTemplateBindingList{}
 
 	// missing rancher crtbs, prtbs, grbs
+	// since GRB, PRTB and CRTB are Rancher custom resources
+	// we don't want to stop the execution by returning an error
+	// (as we do for CRB and RB above)
 	grbUnstructured, err := app.DynamicClient.Resource(globalRoleBindingGVR).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Println("Error listing GlobalRoleBindings:", err)
-		return nil, err
 	}
 
 	prtbUnstructured, err := app.DynamicClient.Resource(projectRoleTemplateBindingGVR).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Println("Error listing ProjectRoleTemplateBindings:", err)
-		return nil, err
 	}
 
 	crtbUnstructured, err := app.DynamicClient.Resource(clusterRoleTemplateBindingGVR).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Println("Error listing ClusterRoleTemplateBindings:", err)
-		return nil, err
 	}
 
 	if grbUnstructured != nil {
